@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LoanScope — Bank Loan Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy2: #112240;
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --cream: #f8f4ec;
+    --text: #1a2340;
+    --muted: #6b7a99;
+    --white: #ffffff;
+    --border: rgba(201,168,76,0.25);
+    --card-bg: rgba(255,255,255,0.95);
+    --shadow: 0 8px 40px rgba(10,22,40,0.13);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); }
+
+  /* NAV */
+  nav {
+    background: var(--navy);
+    padding: 0 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px; position: sticky; top: 0; z-index: 100;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--gold); letter-spacing: 1px; text-decoration: none; }
+  .logo span { color: var(--white); }
+  nav ul { list-style: none; display: flex; gap: 8px; }
+  nav ul li a {
+    color: rgba(255,255,255,0.75); font-size: 14px; text-decoration: none;
+    padding: 8px 16px; border-radius: 6px; transition: all 0.2s; font-weight: 500;
+  }
+  nav ul li a:hover, nav ul li a.active { color: var(--gold); background: rgba(201,168,76,0.1); }
+  .nav-cta {
+    background: var(--gold); color: var(--navy) !important; font-weight: 600 !important;
+    border-radius: 6px !important;
+  }
+  .nav-cta:hover { background: var(--gold-light) !important; color: var(--navy) !important; }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 60%, #1a3560 100%);
+    padding: 100px 48px 80px;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: -100px; right: -100px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .hero-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+  .hero-tag { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: 52px; line-height: 1.15; color: var(--white); margin-bottom: 20px; }
+  .hero h1 em { color: var(--gold); font-style: normal; }
+  .hero p { color: rgba(255,255,255,0.65); font-size: 17px; line-height: 1.7; margin-bottom: 36px; }
+  .hero-btns { display: flex; gap: 16px; flex-wrap: wrap; }
+  .btn-gold {
+    background: var(--gold); color: var(--navy); padding: 14px 28px;
+    border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;
+    transition: all 0.2s; display: inline-block;
+  }
+  .btn-gold:hover { background: var(--gold-light); transform: translateY(-2px); }
+  .btn-outline {
+    border: 1.5px solid rgba(201,168,76,0.5); color: var(--gold); padding: 14px 28px;
+    border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 15px;
+    transition: all 0.2s; display: inline-block;
+  }
+  .btn-outline:hover { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+
+  /* STATS CARD HERO */
+  .hero-card {
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px; backdrop-filter: blur(10px);
+  }
+  .hero-card-title { font-size: 13px; color: var(--gold); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px; }
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(201,168,76,0.1); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: rgba(255,255,255,0.6); font-size: 14px; }
+  .stat-val { color: var(--white); font-weight: 600; font-size: 16px; }
+  .stat-val.green { color: #5de8a0; }
+  .stat-val.amber { color: #f5c842; }
+  .stat-val.red { color: #ff7c7c; }
+
+  /* MODULES GRID */
+  .section { max-width: 1100px; margin: 0 auto; padding: 72px 48px; }
+  .section-tag { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+  .section h2 { font-family: 'Playfair Display', serif; font-size: 36px; margin-bottom: 14px; }
+  .section p.lead { color: var(--muted); font-size: 17px; max-width: 580px; line-height: 1.7; margin-bottom: 48px; }
+
+  .modules-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .module-card {
+    background: var(--card-bg); border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 14px; padding: 30px; text-decoration: none; color: inherit;
+    transition: all 0.25s; position: relative; overflow: hidden;
+  }
+  .module-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--gold); transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .module-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: rgba(201,168,76,0.4); }
+  .module-card:hover::before { transform: scaleX(1); }
+  .module-icon { font-size: 32px; margin-bottom: 18px; display: block; }
+  .module-card h3 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 10px; }
+  .module-card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .module-arrow { position: absolute; bottom: 24px; right: 24px; color: var(--gold); font-size: 20px; opacity: 0; transition: opacity 0.2s; }
+  .module-card:hover .module-arrow { opacity: 1; }
+
+  /* OVERVIEW METRICS */
+  .metrics-strip { background: var(--navy); padding: 48px; }
+  .metrics-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(4,1fr); gap: 32px; text-align: center; }
+  .metric-item .num { font-family: 'Playfair Display', serif; font-size: 40px; color: var(--gold); font-weight: 700; }
+  .metric-item .label { color: rgba(255,255,255,0.55); font-size: 13px; margin-top: 6px; }
+
+  /* INSIGHTS SECTION */
+  .insights-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; }
+  .insight-main { background: var(--card-bg); border: 1px solid rgba(201,168,76,0.15); border-radius: 14px; padding: 36px; }
+  .insight-main h3 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 20px; }
+  .risk-bar-row { margin-bottom: 18px; }
+  .risk-bar-row label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+  .risk-bar-row label span:last-child { font-weight: 600; }
+  .risk-bar-track { background: #e8e4dc; border-radius: 4px; height: 8px; overflow: hidden; }
+  .risk-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .bar-low { background: #5de8a0; }
+  .bar-med { background: #f5c842; }
+  .bar-high { background: #ff7c7c; }
+
+  .insight-side { display: flex; flex-direction: column; gap: 16px; }
+  .insight-mini {
+    background: var(--card-bg); border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 14px; padding: 24px; flex: 1;
+  }
+  .insight-mini .mini-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .insight-mini .mini-value { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; }
+  .insight-mini .mini-desc { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  /* FOOTER */
+
+  /* ── Auth Gate ── */
+  .auth-gate { position:relative; }
+  .auth-gate .gate-overlay {
+    display:none;position:absolute;inset:0;z-index:10;
+    background:rgba(10,22,40,0.82);backdrop-filter:blur(6px);
+    border-radius:inherit;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:32px;
+  }
+  .auth-gate .gate-overlay h3{color:#fff;font-family:'Playfair Display',serif;font-size:22px;margin-bottom:8px;}
+  .auth-gate .gate-overlay p{color:rgba(255,255,255,0.65);font-size:14px;margin-bottom:20px;}
+  .auth-gate .gate-overlay a{background:#c9a84c;color:#0a1628;padding:11px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;}
+  .hero-card { position:relative; }
+  footer { background: var(--navy); border-top: 1px solid var(--border); padding: 40px 48px; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: rgba(255,255,255,0.5); font-size: 13px; text-decoration: none; }
+  .footer-links a:hover { color: var(--gold); }
+  .footer-copy { color: rgba(255,255,255,0.35); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">Loan<span>Scope</span></a>
+  <ul>
+    <li><a href="index.html" class="active">Home</a></li>
+    <li><a href="calculator.html">Calculator</a></li>
+    <li><a href="risk.html">Risk Analysis</a></li>
+    <li><a href="portfolio.html">Portfolio</a></li>
+    <li><a href="reports.html">Reports</a></li>
+    <li id="navAuthArea" style="display:flex;align-items:center;gap:8px;"></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">Bank Loan Analysis Platform</div>
+      <h1>Intelligent <em>Loan</em> Decisions, Data-Driven</h1>
+      <p>Comprehensive bank loan analytics—EMI calculations, credit risk scoring, portfolio management, and regulatory reporting in one unified platform.</p>
+      <div class="hero-btns">
+        <a href="calculator.html" class="btn-gold">Run Loan Calculator</a>
+        <a href="risk.html" class="btn-outline">Assess Risk →</a>
+      </div>
+    </div>
+    <div class="hero-card auth-gate" id="heroCardGate"><div class="gate-overlay" id="heroOverlay"><h3>🔒 Restricted Access</h3><p>Sign in to view live portfolio data</p><a href="signin.html">Sign In →</a></div>
+      <div class="hero-card-title">Live Portfolio Snapshot</div>
+      <div class="stat-row"><span class="stat-label">Total Disbursed</span><span class="stat-val">₹84.2 Cr</span></div>
+      <div class="stat-row"><span class="stat-label">Active Loans</span><span class="stat-val">1,247</span></div>
+      <div class="stat-row"><span class="stat-label">NPA Ratio</span><span class="stat-val amber">3.4%</span></div>
+      <div class="stat-row"><span class="stat-label">Collection Efficiency</span><span class="stat-val green">96.8%</span></div>
+      <div class="stat-row"><span class="stat-label">Avg. Credit Score</span><span class="stat-val">724</span></div>
+      <div class="stat-row"><span class="stat-label">High Risk Accounts</span><span class="stat-val red">58</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- METRICS STRIP -->
+<div class="metrics-strip auth-gate" id="metricsGate" style="position:relative;"><div class="gate-overlay" id="metricsOverlay"><h3>🔒 Login Required</h3><p>Real-time metrics are visible after sign in</p><a href="signin.html">Sign In →</a></div>
+  <div class="metrics-inner">
+    <div class="metric-item"><div class="num">₹2.1T</div><div class="label">Loans Analysed</div></div>
+    <div class="metric-item"><div class="num">98.3%</div><div class="label">Accuracy Rate</div></div>
+    <div class="metric-item"><div class="num">340+</div><div class="label">Risk Parameters</div></div>
+    <div class="metric-item"><div class="num">24/7</div><div class="label">Real-Time Monitoring</div></div>
+  </div>
+</div>
+
+<!-- MODULES -->
+<div class="section">
+  <div class="section-tag">Platform Modules</div>
+  <h2>Everything for Loan Analysis</h2>
+  <p class="lead">From individual EMI breakdowns to portfolio-wide risk exposure—navigate our modules below.</p>
+  <div class="modules-grid">
+    <a href="calculator.html" class="module-card">
+      <span class="module-icon">🧮</span>
+      <h3>Loan Calculator</h3>
+      <p>Compute EMI, total interest, amortisation schedules, and prepayment impact across all loan types.</p>
+      <span class="module-arrow">→</span>
+    </a>
+    <a href="risk.html" class="module-card">
+      <span class="module-icon">🛡️</span>
+      <h3>Risk Assessment</h3>
+      <p>Credit scoring, DSCR analysis, LTV ratios, and automated risk-grade assignment for borrowers.</p>
+      <span class="module-arrow">→</span>
+    </a>
+    <a href="portfolio.html" class="module-card">
+      <span class="module-icon">📊</span>
+      <h3>Portfolio Overview</h3>
+      <p>Sector-wise exposure, vintage analysis, delinquency buckets, and NPA tracking dashboards.</p>
+      <span class="module-arrow">→</span>
+    </a>
+    <a href="reports.html" class="module-card">
+      <span class="module-icon">📋</span>
+      <h3>Reports & Compliance</h3>
+      <p>RBI-aligned reports, CIBIL integration summaries, audit logs, and regulatory filings.</p>
+      <span class="module-arrow">→</span>
+    </a>
+    <a href="risk.html#scoring" class="module-card">
+      <span class="module-icon">⭐</span>
+      <h3>Credit Scoring</h3>
+      <p>Five-factor scoring model with bureau integration, income analysis, and repayment history.</p>
+      <span class="module-arrow">→</span>
+    </a>
+    <a href="portfolio.html#npa" class="module-card">
+      <span class="module-icon">⚠️</span>
+      <h3>NPA Management</h3>
+      <p>Early warning signals, DPD tracking, legal action pipeline, and recovery monitoring.</p>
+      <span class="module-arrow">→</span>
+    </a>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div style="background: #f0ece3; padding: 1px 0;" class="auth-gate" id="insightsGate"><div class="gate-overlay" id="insightsOverlay"><h3>🔒 Login to View Insights</h3><p>Portfolio insights are available after signing in</p><a href="signin.html">Sign In →</a></div>
+<div class="section">
+  <div class="section-tag">Analytics Snapshot</div>
+  <h2>Portfolio Insights</h2>
+  <p class="lead">A real-time view of loan risk distribution and key performance indicators.</p>
+  <div class="insights-grid">
+    <div class="insight-main">
+      <h3>Risk Distribution by Category</h3>
+      <div class="risk-bar-row">
+        <label><span>Home Loans</span><span>Low Risk</span></label>
+        <div class="risk-bar-track"><div class="risk-bar-fill bar-low" style="width:78%"></div></div>
+      </div>
+      <div class="risk-bar-row">
+        <label><span>Personal Loans</span><span>Medium Risk</span></label>
+        <div class="risk-bar-track"><div class="risk-bar-fill bar-med" style="width:55%"></div></div>
+      </div>
+      <div class="risk-bar-row">
+        <label><span>Business Loans</span><span>Medium Risk</span></label>
+        <div class="risk-bar-track"><div class="risk-bar-fill bar-med" style="width:63%"></div></div>
+      </div>
+      <div class="risk-bar-row">
+        <label><span>Education Loans</span><span>Low Risk</span></label>
+        <div class="risk-bar-track"><div class="risk-bar-fill bar-low" style="width:71%"></div></div>
+      </div>
+      <div class="risk-bar-row">
+        <label><span>Auto Loans</span><span>Low Risk</span></label>
+        <div class="risk-bar-track"><div class="risk-bar-fill bar-low" style="width:82%"></div></div>
+      </div>
+      <div class="risk-bar-row">
+        <label><span>MSME Loans</span><span>High Risk</span></label>
+        <div class="risk-bar-track"><div class="risk-bar-fill bar-high" style="width:38%"></div></div>
+      </div>
+      <div style="margin-top: 24px;">
+        <a href="risk.html" class="btn-gold" style="font-size:14px; padding:10px 20px;">Full Risk Report →</a>
+      </div>
+    </div>
+    <div class="insight-side">
+      <div class="insight-mini">
+        <div class="mini-label">Avg EMI/Income Ratio</div>
+        <div class="mini-value" style="color: #5de8a0;">38.2%</div>
+        <div class="mini-desc">Healthy — below 40% threshold</div>
+      </div>
+      <div class="insight-mini">
+        <div class="mini-label">Gross NPA</div>
+        <div class="mini-value" style="color: #f5c842;">3.4%</div>
+        <div class="mini-desc">Industry avg: 4.1% — performing well</div>
+      </div>
+      <div class="insight-mini">
+        <div class="mini-label">Loan Approval Rate</div>
+        <div class="mini-value">67.3%</div>
+        <div class="mini-desc">1,832 applications processed this month</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <a class="logo" href="index.html" style="font-size:18px;">Loan<span>Scope</span></a>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="calculator.html">Calculator</a>
+      <a href="risk.html">Risk</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="reports.html">Reports</a>
+    </div>
+    <div class="footer-copy">© 2026 LoanScope Analytics</div>
+  </div>
+</footer>
+
+
+<script>
+// ─── AUTH GUARD (shared across all pages) ─────────────────────────────────
+(function() {
+  const PUBLIC_PAGES = ['signin.html', 'signup.html'];
+  const currentPage  = location.pathname.split('/').pop() || 'index.html';
+  const isPublic     = PUBLIC_PAGES.some(p => currentPage.includes(p));
+
+  function getUser() {
+    try { return JSON.parse(sessionStorage.getItem('ls_user') || 'null'); } catch { return null; }
+  }
+
+  // ── Redirect unauthenticated users away from protected pages ──
+  if (!isPublic && !getUser()) {
+    sessionStorage.setItem('ls_redirect', location.href);
+    location.href = 'signin.html';
+    return;
+  }
+
+  // ── After DOM ready: render nav avatar or sign-in buttons ──
+  document.addEventListener('DOMContentLoaded', function() {
+    const user = getUser();
+    const navRight = document.getElementById('navAuthArea');
+    if (!navRight) return;
+
+    if (user) {
+      const initials = (user.name || user.email || 'U')
+        .split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+      navRight.innerHTML = `
+        <div style="position:relative;display:inline-block;">
+          <button onclick="toggleProfileMenu()" style="
+            display:flex;align-items:center;gap:10px;background:rgba(201,168,76,0.12);
+            border:1.5px solid rgba(201,168,76,0.4);border-radius:50px;padding:6px 14px 6px 6px;
+            cursor:pointer;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;">
+            <div style="
+              width:34px;height:34px;border-radius:50%;background:var(--gold,#c9a84c);
+              display:flex;align-items:center;justify-content:center;
+              font-weight:700;color:#0a1628;font-size:13px;flex-shrink:0;">${initials}</div>
+            <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${user.name || user.email.split('@')[0]}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="rgba(255,255,255,0.6)">
+              <path d="M2 4l4 4 4-4"/>
+            </svg>
+          </button>
+          <div id="profileMenu" style="
+            display:none;position:absolute;right:0;top:calc(100% + 8px);
+            background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);
+            min-width:220px;overflow:hidden;z-index:999;border:1px solid #eee;">
+            <div style="padding:16px 18px;border-bottom:1px solid #f0ece3;background:#faf8f4;">
+              <div style="font-weight:700;color:#1a2340;font-size:14px;">${user.name || 'User'}</div>
+              <div style="font-size:12px;color:#6b7a99;margin-top:2px;">${user.email || ''}</div>
+            </div>
+            <a href="index.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              🏠 Dashboard
+            </a>
+            <a href="portfolio.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              📊 My Portfolio
+            </a>
+            <a href="reports.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              📋 Reports
+            </a>
+            <button onclick="logoutUser()" style="
+              display:flex;align-items:center;gap:10px;padding:12px 18px;width:100%;
+              border:none;background:none;cursor:pointer;color:#cc3333;font-size:14px;
+              font-family:'DM Sans',sans-serif;text-align:left;">
+              🚪 Sign Out
+            </button>
+          </div>
+        </div>`;
+    } else {
+      navRight.innerHTML = `
+        <a href="signin.html" style="color:rgba(255,255,255,0.75);font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:500;">Sign In</a>
+        <a href="signup.html" style="background:var(--gold,#c9a84c);color:#0a1628;font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:600;">Sign Up Free</a>`;
+    }
+  });
+
+  function toggleProfileMenu() {
+    const m = document.getElementById('profileMenu');
+    if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#navAuthArea')) {
+      const m = document.getElementById('profileMenu');
+      if (m) m.style.display = 'none';
+    }
+  });
+
+  function logoutUser() {
+    sessionStorage.removeItem('ls_user');
+    location.href = 'signin.html';
+  }
+
+  window.toggleProfileMenu = toggleProfileMenu;
+  window.logoutUser = logoutUser;
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function getUser() {
+    try { return JSON.parse(sessionStorage.getItem('ls_user') || 'null'); } catch { return null; }
+  }
+  const user = getUser();
+  const overlayIds = ['heroOverlay','metricsOverlay','insightsOverlay'];
+  overlayIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = user ? 'none' : 'flex';
+  });
+  // Also blur module cards if not logged in
+  if (!user) {
+    document.querySelectorAll('.module-card').forEach(card => {
+      card.style.filter = 'blur(2px)';
+      card.style.pointerEvents = 'none';
+    });
+  }
+});
+</script>
+</body>
+</html>

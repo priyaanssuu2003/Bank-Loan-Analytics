@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In — LoanScope</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<!-- ✅ Google OAuth SDK -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- ✅ EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  (function(){
+    emailjs.init({ publicKey: '5hVNXEPgombioDmCw' });
+  })();
+</script>
+<!-- ✅ Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDE-EpxSU356Y-M8tVDVOuuSWBsUvSXf9g",
+    authDomain: "loanscope-a31b7.firebaseapp.com",
+    projectId: "loanscope-a31b7",
+    storageBucket: "loanscope-a31b7.firebasestorage.app",
+    messagingSenderId: "494380279336",
+    appId: "1:494380279336:web:9074d530893fa4cbc3b8bd",
+    measurementId: "G-J917GWQV1Z"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // Save Google sign-in users to Firestore (only if not already stored)
+  window.saveGoogleUserToFirestore = async function(payload) {
+    try {
+      const docId = payload.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      await setDoc(doc(db, 'users', docId), {
+        firstName:    payload.given_name  || payload.name?.split(' ')[0] || '',
+        lastName:     payload.family_name || payload.name?.split(' ').slice(1).join(' ') || '',
+        email:        payload.email,
+        mobile:       '',
+        dob:          '',
+        org:          '',
+        role:         '',
+        signupMethod: 'google',
+        otpVerified:  true,
+        lastLogin:    serverTimestamp(),
+        createdAt:    serverTimestamp()
+      }, { merge: true }); // merge:true won't overwrite existing fields
+      console.log('✅ Google user saved to Firestore');
+    } catch (err) {
+      console.error('❌ Firestore error:', err);
+    }
+  };
+</script>
+<style>
+  :root {
+    --navy:#0a1628;--navy2:#112240;--gold:#c9a84c;--gold-light:#f0d080;
+    --cream:#f8f4ec;--text:#1a2340;--muted:#6b7a99;
+    --white:#ffffff;--border:rgba(201,168,76,0.25);
+    --green:#1a6b3c;--green-bg:#d4f7e7;
+    --red:#8a1a1a;--red-bg:#fde8e8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--navy);min-height:100vh;display:flex;flex-direction:column;}
+
+  nav{padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold);letter-spacing:1px;text-decoration:none;}
+  .logo span{color:var(--white);}
+  .nav-right{font-size:14px;color:rgba(255,255,255,0.5);}
+  .nav-right a{color:var(--gold);text-decoration:none;font-weight:600;margin-left:6px;}
+
+  .page-wrap{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 68px);}
+
+  /* LEFT PANEL */
+  .left-panel{
+    background:linear-gradient(160deg,#0a1628 0%,#112240 50%,#1a3560 100%);
+    padding:60px 52px;display:flex;flex-direction:column;justify-content:center;
+    position:relative;overflow:hidden;border-right:1px solid var(--border);
+  }
+  .left-panel::after{
+    content:'';position:absolute;top:-80px;right:-80px;width:400px;height:400px;
+    background:radial-gradient(circle,rgba(201,168,76,0.06) 0%,transparent 70%);border-radius:50%;
+  }
+  .left-tag{font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-bottom:20px;}
+  .left-panel h2{font-family:'Playfair Display',serif;font-size:42px;color:var(--white);line-height:1.2;margin-bottom:18px;}
+  .left-panel h2 em{color:var(--gold);font-style:normal;}
+  .left-panel p{color:rgba(255,255,255,0.55);font-size:15px;line-height:1.7;margin-bottom:40px;}
+
+  /* STATS SHOWCASE */
+  .stat-showcase{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:36px;}
+  .stat-box{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+  .stat-box .sn{font-family:'Playfair Display',serif;font-size:26px;color:var(--gold);font-weight:700;}
+  .stat-box .sl{font-size:12px;color:rgba(255,255,255,0.45);margin-top:4px;}
+
+  /* TESTIMONIAL */
+  .testimonial{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-top:10px;}
+  .testimonial p{font-size:14px;color:rgba(255,255,255,0.7);line-height:1.6;font-style:italic;margin-bottom:12px;}
+  .t-author{display:flex;align-items:center;gap:10px;}
+  .t-avatar{width:36px;height:36px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:14px;}
+  .t-name{font-size:13px;color:rgba(255,255,255,0.6);}
+  .t-name strong{display:block;color:rgba(255,255,255,0.9);}
+
+  /* RIGHT PANEL */
+  .right-panel{background:var(--cream);padding:52px;display:flex;flex-direction:column;justify-content:center;}
+  .form-header{margin-bottom:36px;}
+  .form-header h1{font-family:'Playfair Display',serif;font-size:32px;color:var(--text);margin-bottom:6px;}
+  .form-header p{color:var(--muted);font-size:14px;}
+  .form-header p a{color:var(--gold);text-decoration:none;font-weight:600;}
+
+  /* TABS */
+  .auth-tabs{display:flex;background:#e8e4dc;border-radius:10px;padding:4px;margin-bottom:32px;}
+  .tab-btn{flex:1;padding:10px;border:none;background:transparent;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted);transition:all 0.2s;}
+  .tab-btn.active{background:var(--white);color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+
+  /* FORM */
+  .fg{margin-bottom:20px;position:relative;}
+  .fg label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;}
+  .fg input,.fg select{
+    width:100%;padding:13px 16px;font-size:15px;font-family:'DM Sans',sans-serif;
+    border:1.5px solid #ddd;border-radius:9px;background:var(--white);
+    outline:none;color:var(--text);transition:border-color 0.2s,box-shadow 0.2s;
+  }
+  .fg input:focus,.fg select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.12);}
+  .fg input.valid{border-color:#5de8a0;}
+  .fg input.invalid{border-color:#ff7c7c;}
+  .pass-wrap{position:relative;}
+  .pass-wrap input{padding-right:48px;}
+  .eye-btn{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:0;line-height:1;}
+  .field-msg{font-size:12px;margin-top:5px;display:none;}
+  .field-msg.show{display:block;}
+  .field-msg.ok{color:var(--green);}
+  .field-msg.err{color:#cc3333;}
+
+  /* PASSWORD STRENGTH (for reset flow) */
+  .strength-bar{display:flex;gap:4px;margin-top:8px;}
+  .sb{height:4px;flex:1;border-radius:2px;background:#ddd;transition:background 0.3s;}
+  .strength-label{font-size:12px;margin-top:5px;font-weight:600;color:var(--muted);}
+  .pwd-rules{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+  .rule{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;transition:color 0.2s;}
+  .rule .dot{width:6px;height:6px;border-radius:50%;background:#ddd;flex-shrink:0;transition:background 0.2s;}
+  .rule.pass{color:var(--green);}
+  .rule.pass .dot{background:#5de8a0;}
+  .rule.fail{color:#cc3333;}
+  .rule.fail .dot{background:#ff7c7c;}
+
+  /* REMEMBER + FORGOT */
+  .row-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+  .remember{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;}
+  .remember input{accent-color:var(--gold);width:14px;height:14px;}
+  .forgot-link{font-size:13px;color:var(--gold);text-decoration:none;font-weight:600;}
+  .forgot-link:hover{color:var(--gold-light);}
+
+  /* BUTTONS */
+  .btn-primary{
+    width:100%;padding:14px;background:var(--gold);color:var(--navy);
+    border:none;border-radius:9px;font-size:16px;font-weight:700;
+    cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;letter-spacing:0.3px;
+  }
+  .btn-primary:hover{background:var(--gold-light);transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,0.3);}
+  .btn-secondary{
+    width:100%;padding:13px;background:transparent;color:var(--text);
+    border:1.5px solid #ddd;border-radius:9px;font-size:15px;font-weight:500;
+    cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-top:10px;
+  }
+  .btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
+
+  /* DIVIDER */
+  .divider{display:flex;align-items:center;gap:12px;margin:22px 0;}
+  .divider span{color:var(--muted);font-size:12px;white-space:nowrap;}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:#ddd;}
+
+  /* SOCIAL */
+  .social-btn{
+    width:100%;padding:12px;border:1.5px solid #ddd;border-radius:9px;
+    background:var(--white);font-size:14px;font-weight:500;cursor:pointer;
+    font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;
+    gap:10px;color:var(--text);transition:all 0.2s;margin-bottom:10px;
+  }
+  .social-btn:hover{border-color:var(--gold);background:#fff9ee;}
+
+  /* OTP */
+  .otp-grid{display:flex;gap:10px;justify-content:center;margin:20px 0;}
+  .otp-grid input{
+    width:52px;height:56px;text-align:center;font-size:22px;font-weight:700;
+    border:1.5px solid #ddd;border-radius:9px;outline:none;
+    font-family:'DM Sans',sans-serif;color:var(--text);
+    transition:border-color 0.2s,box-shadow 0.2s;
+  }
+  .otp-grid input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.15);}
+  .otp-grid input.filled{border-color:#5de8a0;background:#f0fff8;}
+
+  /* LOCK INDICATOR */
+  .attempt-bar{background:#fff3cd;border:1px solid #f5c842;border-radius:8px;padding:12px 16px;font-size:13px;color:#7a5c00;margin-bottom:18px;display:none;}
+  .attempt-bar.show{display:flex;align-items:center;gap:8px;}
+
+  /* LOCKED STATE */
+  .locked-box{background:#fde8e8;border:1px solid #ff7c7c;border-radius:10px;padding:20px;text-align:center;margin-bottom:20px;display:none;}
+  .locked-box.show{display:block;}
+  .locked-box h4{color:#8a1a1a;margin-bottom:6px;font-size:16px;}
+  .locked-box p{color:#cc3333;font-size:13px;}
+
+  /* SECTION VISIBILITY */
+  .auth-section{display:none;}
+  .auth-section.active{display:block;}
+
+  /* SUCCESS */
+  .success-wrap{text-align:center;padding:10px 0;}
+  .success-icon{font-size:56px;margin-bottom:14px;}
+  .success-wrap h2{font-family:'Playfair Display',serif;font-size:24px;color:var(--text);margin-bottom:8px;}
+  .success-wrap p{color:var(--muted);font-size:14px;line-height:1.6;}
+
+  /* 2FA BADGE */
+  .twofa-badge{display:inline-flex;align-items:center;gap:6px;background:#e8f0ff;border:1px solid #b0c4ff;border-radius:6px;padding:5px 10px;font-size:12px;color:#1a3a8a;font-weight:600;margin-bottom:16px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all 0.35s;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.success{background:#d4f7e7;color:#1a6b3c;border-left:4px solid #5de8a0;}
+  .toast.error{background:#fde8e8;color:#8a1a1a;border-left:4px solid #ff7c7c;}
+  .toast.info{background:#e8f0ff;color:#1a3a8a;border-left:4px solid #4a7cff;}
+  .toast.warning{background:#fff3cd;color:#7a5c00;border-left:4px solid #f5c842;}
+
+  /* SECTION PROGRESS DOTS */
+  .flow-dots{display:flex;gap:8px;justify-content:center;margin-bottom:24px;}
+  .fd{width:8px;height:8px;border-radius:50%;background:#ddd;transition:all 0.3s;}
+  .fd.active{background:var(--gold);width:22px;border-radius:4px;}
+  .fd.done{background:#5de8a0;}
+
+  /* Sending spinner */
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(10,22,40,0.3);border-top-color:#0a1628;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  footer{background:var(--navy);padding:18px 48px;text-align:center;border-top:1px solid var(--border);}
+  footer p{color:rgba(255,255,255,0.3);font-size:12px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">Loan<span>Scope</span></a>
+  <div class="nav-right">Don't have an account? <a href="signup.html">Sign Up Free</a></div>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="left-tag">Welcome Back</div>
+    <h2>Your <em>Portfolio</em> Awaits</h2>
+    <p>Sign in to access live loan analytics, risk dashboards, and regulatory reports.</p>
+
+    <div class="stat-showcase">
+      <div class="stat-box"><div class="sn">₹84.2Cr</div><div class="sl">Portfolio Monitored</div></div>
+      <div class="stat-box"><div class="sn">96.8%</div><div class="sl">Collection Rate</div></div>
+      <div class="stat-box"><div class="sn">1,247</div><div class="sl">Active Loans</div></div>
+      <div class="stat-box"><div class="sn">724</div><div class="sl">Avg Credit Score</div></div>
+    </div>
+
+    <div class="testimonial">
+      <p>"LoanScope cut our NPA identification time by 60%. The risk scoring engine is remarkably accurate."</p>
+      <div class="t-author">
+        <div class="t-avatar">SR</div>
+        <div class="t-name"><strong>Suresh Rajan</strong>Chief Risk Officer, Apex Bank</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- ══════════ LOGIN FLOW ══════════ -->
+    <div id="loginFlow">
+
+      <!-- STEP L1: CREDENTIALS -->
+      <div class="auth-section active" id="L1">
+        <div class="form-header">
+          <h1>Sign In</h1>
+          <p>New to LoanScope? <a href="signup.html">Create a free account</a></p>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="tab-btn active" onclick="switchTab('email')">📧 Email</button>
+          <button class="tab-btn" onclick="switchTab('mobile')">📱 Mobile OTP</button>
+        </div>
+
+        <!-- EMAIL LOGIN -->
+        <div id="emailTab">
+          <div class="attempt-bar" id="attemptBar">⚠️ <span id="attemptText"></span></div>
+          <div class="locked-box" id="lockedBox">
+            <h4>🔒 Account Temporarily Locked</h4>
+            <p>Too many failed attempts. Try again in <span id="lockTimer">5:00</span> or reset your password.</p>
+          </div>
+          <div class="fg">
+            <label>Email Address</label>
+            <input type="email" id="loginEmail" placeholder="rajesh.sharma@bank.com" oninput="validateLoginEmail()"/>
+            <span class="field-msg" id="loginEmailMsg"></span>
+          </div>
+          <div class="fg">
+            <label>Password</label>
+            <div class="pass-wrap">
+              <input type="password" id="loginPass" placeholder="Your password" oninput="validateLoginPass()"/>
+              <button class="eye-btn" onclick="togglePass('loginPass',this)">👁</button>
+            </div>
+            <span class="field-msg" id="loginPassMsg"></span>
+          </div>
+          <div class="row-between">
+            <label class="remember"><input type="checkbox" id="rememberMe"/> Remember me for 30 days</label>
+            <a class="forgot-link" href="#" onclick="showForgot(event)">Forgot Password?</a>
+          </div>
+          <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+          <div class="divider"><span>or continue with</span></div>
+
+          <!-- ✅ Google Sign-In via GSI SDK popup -->
+          <div id="g_id_onload"
+               data-client_id="385189104800-mr1fvhodrf1n9ri3oso7h24g5sqtgfaj.apps.googleusercontent.com"
+               data-context="signin"
+               data-ux_mode="popup"
+               data-callback="handleGoogleSignIn"
+               data-auto_prompt="false">
+          </div>
+          <button class="social-btn" id="googleSignInBtn" onclick="triggerGooglePopup()">
+            <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+            Sign in with Google
+          </button>
+        </div>
+
+        <!-- MOBILE OTP LOGIN -->
+        <div id="mobileTab" style="display:none;">
+          <div class="fg">
+            <label>Mobile Number</label>
+            <input type="tel" id="mobLogin" placeholder="+91 98765 43210" oninput="validateMobLogin()"/>
+            <span class="field-msg" id="mobLoginMsg"></span>
+          </div>
+          <button class="btn-primary" id="sendMobBtn" onclick="sendMobOTP()">Send OTP →</button>
+          <div id="mobOTPSection" style="display:none;margin-top:24px;">
+            <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:6px;">Enter the 6-digit OTP sent to</p>
+            <p style="text-align:center;font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;" id="mobOTPHint">—</p>
+            <div id="mobOtpFallback" style="display:none;text-align:center;background:#fff8e0;border:1px solid #f5c842;border-radius:8px;padding:10px;font-size:13px;color:#7a5c00;margin-bottom:14px;">
+              📱 SMS unavailable — Your OTP is: <strong id="mobOtpDisplay" style="font-size:18px;letter-spacing:4px;color:#0a1628;"></strong>
+            </div>
+            <div class="otp-grid">
+              <input type="text" maxlength="1" id="motp0" oninput="motpInput(0)" onkeydown="motpKey(event,0)"/>
+              <input type="text" maxlength="1" id="motp1" oninput="motpInput(1)" onkeydown="motpKey(event,1)"/>
+              <input type="text" maxlength="1" id="motp2" oninput="motpInput(2)" onkeydown="motpKey(event,2)"/>
+              <input type="text" maxlength="1" id="motp3" oninput="motpInput(3)" onkeydown="motpKey(event,3)"/>
+              <input type="text" maxlength="1" id="motp4" oninput="motpInput(4)" onkeydown="motpKey(event,4)"/>
+              <input type="text" maxlength="1" id="motp5" oninput="motpInput(5)" onkeydown="motpKey(event,5)"/>
+            </div>
+            <button class="btn-primary" onclick="verifyMobOTP()">Verify & Sign In →</button>
+            <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:14px;">
+              Didn't receive it?
+              <a href="#" id="mobResendLink" onclick="resendMobOTP(event)" style="color:var(--gold);font-weight:600;text-decoration:none;">Resend OTP</a>
+              <span id="mobCountdown" style="font-size:12px;color:var(--muted);margin-left:4px;"></span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP L2: 2FA -->
+      <div class="auth-section" id="L2">
+        <div class="form-header">
+          <h1>Two-Factor Auth</h1>
+          <p>Extra security step to protect your account</p>
+        </div>
+        <div class="flow-dots">
+          <div class="fd done"></div>
+          <div class="fd active"></div>
+          <div class="fd"></div>
+        </div>
+        <div class="twofa-badge">🔐 2FA Required — High Security Zone</div>
+        <p style="font-size:14px;color:var(--muted);margin-bottom:6px;">Enter the 6-digit code from your authenticator app or the OTP sent to your registered email.</p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">A 6-digit OTP has been sent to your registered email.</p>
+        <div class="otp-grid">
+          <input type="text" maxlength="1" id="fa0" oninput="faInput(0)" onkeydown="faKey(event,0)"/>
+          <input type="text" maxlength="1" id="fa1" oninput="faInput(1)" onkeydown="faKey(event,1)"/>
+          <input type="text" maxlength="1" id="fa2" oninput="faInput(2)" onkeydown="faKey(event,2)"/>
+          <input type="text" maxlength="1" id="fa3" oninput="faInput(3)" onkeydown="faKey(event,3)"/>
+          <input type="text" maxlength="1" id="fa4" oninput="faInput(4)" onkeydown="faKey(event,4)"/>
+          <input type="text" maxlength="1" id="fa5" oninput="faInput(5)" onkeydown="faKey(event,5)"/>
+        </div>
+        <button class="btn-primary" onclick="verify2FA()">Confirm & Sign In →</button>
+        <button class="btn-secondary" onclick="showSection('L1')">← Back to Login</button>
+        <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:14px;">
+          Didn't get a code? <a href="#" style="color:var(--gold);font-weight:600;text-decoration:none;" onclick="resend2FA(event)">Resend</a>
+        </p>
+      </div>
+
+      <!-- STEP L3: SUCCESS -->
+      <div class="auth-section" id="L3">
+        <div class="flow-dots">
+          <div class="fd done"></div>
+          <div class="fd done"></div>
+          <div class="fd active"></div>
+        </div>
+        <div class="success-wrap">
+          <div class="success-icon">✅</div>
+          <h2>Welcome Back!</h2>
+          <p>You've signed in successfully.<br/>Redirecting to your dashboard…</p>
+          <div style="margin:24px 0;padding:16px 20px;background:#e8faf3;border:1px solid #b0f0d0;border-radius:10px;font-size:13px;color:#1a6b3c;text-align:left;">
+            <div style="margin-bottom:6px;">🔒 Session secured with 256-bit SSL</div>
+            <div style="margin-bottom:6px;">📍 Last login: <span id="lastLogin">—</span></div>
+            <div>🖥 Device: <span id="deviceInfo">—</span></div>
+          </div>
+          <a href="index.html" style="display:inline-block;background:var(--gold);color:var(--navy);padding:13px 30px;border-radius:9px;text-decoration:none;font-weight:700;font-size:15px;">Go to Dashboard →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FORGOT PASSWORD FLOW ══════════ -->
+    <div id="forgotFlow" style="display:none;">
+
+      <!-- FP1: Enter Email -->
+      <div class="auth-section active" id="FP1">
+        <div class="form-header">
+          <h1>Reset Password</h1>
+          <p>Enter your registered email to receive a reset link</p>
+        </div>
+        <div class="flow-dots">
+          <div class="fd active"></div><div class="fd"></div><div class="fd"></div><div class="fd"></div>
+        </div>
+        <div class="fg">
+          <label>Registered Email</label>
+          <input type="email" id="fpEmail" placeholder="your@email.com" oninput="validateFPEmail()"/>
+          <span class="field-msg" id="fpEmailMsg"></span>
+        </div>
+        <button class="btn-primary" onclick="sendResetOTP()">Send Reset OTP →</button>
+        <button class="btn-secondary" onclick="backToLogin()">← Back to Sign In</button>
+      </div>
+
+      <!-- FP2: OTP Verify -->
+      <div class="auth-section" id="FP2">
+        <div class="form-header">
+          <h1>Verify Identity</h1>
+          <p>Enter the OTP sent to <strong id="fpEmailShow"></strong></p>
+        </div>
+        <div class="flow-dots">
+          <div class="fd done"></div><div class="fd active"></div><div class="fd"></div><div class="fd"></div>
+        </div>
+        <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:18px;">A 6-digit OTP has been sent to your email.</p>
+        <div class="otp-grid">
+          <input type="text" maxlength="1" id="fpotp0" oninput="fpOtpInput(0)" onkeydown="fpOtpKey(event,0)"/>
+          <input type="text" maxlength="1" id="fpotp1" oninput="fpOtpInput(1)" onkeydown="fpOtpKey(event,1)"/>
+          <input type="text" maxlength="1" id="fpotp2" oninput="fpOtpInput(2)" onkeydown="fpOtpKey(event,2)"/>
+          <input type="text" maxlength="1" id="fpotp3" oninput="fpOtpInput(3)" onkeydown="fpOtpKey(event,3)"/>
+          <input type="text" maxlength="1" id="fpotp4" oninput="fpOtpInput(4)" onkeydown="fpOtpKey(event,4)"/>
+          <input type="text" maxlength="1" id="fpotp5" oninput="fpOtpInput(5)" onkeydown="fpOtpKey(event,5)"/>
+        </div>
+        <button class="btn-primary" onclick="verifyResetOTP()">Verify OTP →</button>
+        <button class="btn-secondary" onclick="showFPSection('FP1')">← Back</button>
+        <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:14px;">
+          Didn't receive? <a href="#" style="color:var(--gold);font-weight:600;text-decoration:none;" onclick="resendResetOTP(event)">Resend OTP</a>
+        </p>
+      </div>
+
+      <!-- FP3: Security Question -->
+      <div class="auth-section" id="FP3">
+        <div class="form-header">
+          <h1>Security Check</h1>
+          <p>Answer your security question for additional verification</p>
+        </div>
+        <div class="flow-dots">
+          <div class="fd done"></div><div class="fd done"></div><div class="fd active"></div><div class="fd"></div>
+        </div>
+        <div style="background:#f0ece3;border-radius:10px;padding:16px 18px;margin-bottom:20px;font-size:14px;color:var(--text);">
+          <strong>Question:</strong> What was the name of your first pet?
+        </div>
+        <div class="fg">
+          <label>Your Answer</label>
+          <input type="text" id="secAnswer" placeholder="Type your answer" oninput="validateSecAns()"/>
+          <span class="field-msg" id="secAnsMsg"></span>
+        </div>
+        <button class="btn-primary" onclick="verifySecAnswer()">Verify Answer →</button>
+        <button class="btn-secondary" onclick="showFPSection('FP2')">← Back</button>
+      </div>
+
+      <!-- FP4: New Password -->
+      <div class="auth-section" id="FP4">
+        <div class="form-header">
+          <h1>New Password</h1>
+          <p>Create a strong new password for your account</p>
+        </div>
+        <div class="flow-dots">
+          <div class="fd done"></div><div class="fd done"></div><div class="fd done"></div><div class="fd active"></div>
+        </div>
+        <div class="fg">
+          <label>New Password</label>
+          <div class="pass-wrap">
+            <input type="password" id="newPass" placeholder="Min. 8 characters" oninput="checkNewPass()"/>
+            <button class="eye-btn" onclick="togglePass('newPass',this)">👁</button>
+          </div>
+          <div class="strength-bar">
+            <div class="sb" id="nsb1"></div><div class="sb" id="nsb2"></div>
+            <div class="sb" id="nsb3"></div><div class="sb" id="nsb4"></div>
+          </div>
+          <div class="strength-label" id="nStrengthLabel">Enter a password</div>
+          <div class="pwd-rules">
+            <div class="rule" id="nr-len"><span class="dot"></span>At least 8 characters</div>
+            <div class="rule" id="nr-upper"><span class="dot"></span>One uppercase letter</div>
+            <div class="rule" id="nr-lower"><span class="dot"></span>One lowercase letter</div>
+            <div class="rule" id="nr-num"><span class="dot"></span>One number</div>
+            <div class="rule" id="nr-special"><span class="dot"></span>One special character</div>
+            <div class="rule" id="nr-history"><span class="dot"></span>Different from last password</div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Confirm New Password</label>
+          <div class="pass-wrap">
+            <input type="password" id="newPassConf" placeholder="Re-enter new password" oninput="checkNewConf()"/>
+            <button class="eye-btn" onclick="togglePass('newPassConf',this)">👁</button>
+          </div>
+          <span class="field-msg" id="newConfMsg"></span>
+        </div>
+        <button class="btn-primary" onclick="resetPassword()">Reset Password & Sign In →</button>
+      </div>
+
+      <!-- FP5: Reset Success -->
+      <div class="auth-section" id="FP5">
+        <div class="success-wrap">
+          <div class="success-icon">🔓</div>
+          <h2>Password Reset!</h2>
+          <p>Your password has been successfully updated.<br/>All other sessions have been logged out for security.</p>
+          <div style="margin:20px 0;padding:14px;background:#e8faf3;border:1px solid #b0f0d0;border-radius:10px;font-size:13px;color:#1a6b3c;">
+            ✅ Password updated &nbsp;·&nbsp; ✅ Sessions cleared &nbsp;·&nbsp; ✅ Security log updated
+          </div>
+          <button class="btn-primary" onclick="backToLogin()" style="max-width:280px;margin:0 auto;display:block;">Sign In with New Password →</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end right-panel -->
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer><p>© 2026 LoanScope Analytics · Secured with 256-bit SSL · RBI Compliant · <a href="signup.html" style="color:rgba(255,255,255,0.4);">Create Account</a></p></footer>
+
+<script>
+// ─── EMAILJS CONFIG ────────────────────────────────────
+const EJS_SERVICE  = 'service_feaaasg';
+const EJS_TEMPLATE = 'template_p6ndvfn';
+
+// ─── FAST2SMS CONFIG ───────────────────────────────────
+const FAST2SMS_API_KEY = '5AchLWVIBT9DEJCkX6NPbvuozMKnSQmpsHZ3qx02Rfew8ta7FlSEF73uHOVIPvCBaN9lcxzjiQAq02JM';
+
+// ─── STATE ─────────────────────────────────────────────
+const DEMO_CREDS = { email:'admin@loanscope.in', pass:'Admin@123' };
+let live2FA_OTP      = '';
+let liveReset_OTP    = '';
+let liveMob_OTP      = '';
+let loginAttempts = 0;
+let isLocked = false;
+let lockInterval = null;
+let activeTab = 'email';
+
+// ─── OTP GENERATOR ─────────────────────────────────────
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// ─── SEND OTP EMAIL ────────────────────────────────────
+async function sendOTPEmail(toEmail, toName, otp, purpose) {
+  try {
+    const now = new Date();
+    const expiry = new Date(now.getTime() + 15*60000);
+    const timeStr = expiry.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    await emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
+      email:    toEmail,
+      passcode: otp,
+      time:     timeStr
+    });
+    return true;
+  } catch (err) {
+    console.error('EmailJS error:', err);
+    return false;
+  }
+}
+
+// ─── TOAST ─────────────────────────────────────────────
+function showToast(msg, type='info') {
+  let t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// ─── TAB SWITCHER ──────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['email','mobile'][i] === tab));
+  document.getElementById('emailTab').style.display    = tab==='email'    ? 'block' : 'none';
+  document.getElementById('mobileTab').style.display   = tab==='mobile'   ? 'block' : 'none';
+}
+
+// ─── SECTION SWITCHERS ─────────────────────────────────
+function showSection(id) {
+  document.querySelectorAll('#loginFlow .auth-section').forEach(s => s.classList.toggle('active', s.id===id));
+}
+function showFPSection(id) {
+  document.querySelectorAll('#forgotFlow .auth-section').forEach(s => s.classList.toggle('active', s.id===id));
+}
+
+// ─── VALIDATION ────────────────────────────────────────
+function setMsg(id, msg, type) { let e=document.getElementById(id); e.textContent=msg; e.className='field-msg show '+type; }
+function clearMsg(id) { document.getElementById(id).className='field-msg'; }
+
+function validateLoginEmail() {
+  let v=document.getElementById('loginEmail').value.trim();
+  let re=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!v) { clearMsg('loginEmailMsg'); return false; }
+  if (!re.test(v)) { setMsg('loginEmailMsg','Invalid email format','err'); return false; }
+  setMsg('loginEmailMsg','✓ Valid','ok'); return true;
+}
+function validateLoginPass() {
+  let v=document.getElementById('loginPass').value;
+  if (!v) { clearMsg('loginPassMsg'); return false; }
+  if (v.length < 6) { setMsg('loginPassMsg','Password too short','err'); return false; }
+  clearMsg('loginPassMsg'); return true;
+}
+function validateFPEmail() {
+  let v=document.getElementById('fpEmail').value.trim();
+  let re=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!v) { clearMsg('fpEmailMsg'); return false; }
+  if (!re.test(v)) { setMsg('fpEmailMsg','Enter a valid email address','err'); return false; }
+  setMsg('fpEmailMsg','✓ Valid email','ok'); return true;
+}
+function validateMobLogin() {
+  let v=document.getElementById('mobLogin').value.replace(/\s+/g,'').replace(/^\+91/,'');
+  if (!v) { clearMsg('mobLoginMsg'); return false; }
+  if (!/^\d{10}$/.test(v) || /^[012345]/.test(v)) { setMsg('mobLoginMsg','Enter a valid 10-digit mobile number','err'); return false; }
+  setMsg('mobLoginMsg','✓ Valid mobile','ok'); return true;
+}
+function validateSecAns() {
+  let v=document.getElementById('secAnswer').value.trim();
+  if (!v) { clearMsg('secAnsMsg'); return false; }
+  if (v.length < 2) { setMsg('secAnsMsg','Answer too short','err'); return false; }
+  setMsg('secAnsMsg','✓ Answer entered','ok'); return true;
+}
+
+// ─── LOGIN FLOW ────────────────────────────────────────
+// ── User store helpers ─────────────────────────────────
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('ls_users') || '{}'); } catch { return {}; }
+}
+function saveUser(email, pass, name) {
+  const users = getUsers();
+  users[email.toLowerCase()] = { pass, name: name || email.split('@')[0] };
+  localStorage.setItem('ls_users', JSON.stringify(users));
+}
+function checkCredentials(email, pass) {
+  // Built-in demo account
+  if (email === 'admin@loanscope.in' && pass === 'Admin@123') return { name: 'Admin' };
+  // Registered / reset users
+  const users = getUsers();
+  const u = users[email.toLowerCase()];
+  if (u && u.pass === pass) return u;
+  return null;
+}
+
+function doLogin() {
+  if (isLocked) { showToast('Account is locked. Please wait or reset your password.','error'); return; }
+  if (!validateLoginEmail() || !validateLoginPass()) { showToast('Please fill in all fields correctly.','error'); return; }
+  let email = document.getElementById('loginEmail').value.trim();
+  let pass  = document.getElementById('loginPass').value;
+
+  const user = checkCredentials(email, pass);
+  if (user) {
+    loginAttempts = 0;
+    showToast('Credentials verified! Sending 2FA OTP to your email…','info');
+    live2FA_OTP = generateOTP();
+    sendOTPEmail(email, user.name, live2FA_OTP, '2FA Login Verification').then(sent => {
+      if (sent) {
+        showToast('2FA OTP sent to ' + email + '! Check your inbox.','success');
+      } else {
+        showToast('Could not send OTP email. Check EmailJS config.','error');
+      }
+      setTimeout(() => showSection('L2'), 800);
+    });
+  } else {
+    loginAttempts++;
+    let remaining = 5 - loginAttempts;
+    let bar = document.getElementById('attemptBar');
+    let txt = document.getElementById('attemptText');
+    bar.classList.add('show');
+    if (remaining > 0) {
+      txt.textContent = `Incorrect credentials. ${remaining} attempt${remaining===1?'':'s'} remaining before lockout.`;
+      showToast(`Wrong credentials! ${remaining} attempt${remaining===1?'':'s'} left.`,'error');
+    } else {
+      lockAccount();
+    }
+  }
+}
+
+function lockAccount() {
+  isLocked = true;
+  document.getElementById('lockedBox').classList.add('show');
+  document.getElementById('attemptBar').classList.remove('show');
+  let secs = 300; // 5 min
+  lockInterval = setInterval(() => {
+    secs--;
+    let m=Math.floor(secs/60), s=secs%60;
+    document.getElementById('lockTimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (secs <= 0) {
+      clearInterval(lockInterval);
+      isLocked = false;
+      loginAttempts = 0;
+      document.getElementById('lockedBox').classList.remove('show');
+      showToast('Account unlocked. You may try again.','info');
+    }
+  },1000);
+}
+
+// ─── 2FA ───────────────────────────────────────────────
+function faInput(i) {
+  let v=document.getElementById('fa'+i).value.replace(/\D/g,'');
+  document.getElementById('fa'+i).value=v;
+  if (v && i<5) document.getElementById('fa'+(i+1)).focus();
+  if(v) document.getElementById('fa'+i).classList.add('filled');
+  else document.getElementById('fa'+i).classList.remove('filled');
+}
+function faKey(e,i){ if(e.key==='Backspace'&&!document.getElementById('fa'+i).value&&i>0) document.getElementById('fa'+(i-1)).focus(); }
+
+function verify2FA() {
+  let code=[0,1,2,3,4,5].map(i=>document.getElementById('fa'+i).value).join('');
+  if (code.length<6) { showToast('Please enter the complete 6-digit code.','error'); return; }
+  if (!live2FA_OTP) { showToast('No OTP found. Please login again.','error'); return; }
+  if (code !== live2FA_OTP) { showToast('Incorrect OTP. Please try again.','error'); return; }
+  const _email = document.getElementById('loginEmail').value.trim();
+  sessionStorage.setItem('ls_user', JSON.stringify({ email: _email, name: _email.split('@')[0], loginTime: Date.now() }));
+  document.getElementById('lastLogin').textContent = new Date().toLocaleString('en-IN');
+  document.getElementById('deviceInfo').textContent = navigator.platform + ' · ' + navigator.userAgent.split(' ').pop();
+  showSection('L3');
+  showToast('Signed in successfully! Welcome back.','success');
+  setTimeout(() => { location.href = 'index.html'; }, 2000);
+}
+async function resend2FA(e) {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!email) { showToast('Cannot resend — email not found.','error'); return; }
+  live2FA_OTP = generateOTP();
+  const sent = await sendOTPEmail(email, email.split('@')[0], live2FA_OTP, '2FA Login Verification');
+  if (sent) showToast('New OTP sent to ' + email,'success');
+  else showToast('Failed to resend OTP.','error');
+}
+
+// ─── MOBILE OTP LOGIN (Fast2SMS with on-screen fallback) ───────
+let mobCountdownTimer = null;
+
+async function sendSMSOTP(mobile, otp) {
+  const cleanMobile = mobile.replace(/^\+91/,'').replace(/\s+/g,'');
+  try {
+    const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${FAST2SMS_API_KEY}&route=q&message=Your%20LoanScope%20login%20OTP%20is%20${otp}.%20Valid%20for%2010%20minutes.&flash=0&numbers=${cleanMobile}`;
+    const res = await fetch(url, { method: 'GET', headers: { 'cache-control': 'no-cache' } });
+    const data = await res.json();
+    return data.return === true;
+  } catch (err) {
+    console.error('Fast2SMS error (likely CORS):', err);
+    return false; // triggers on-screen fallback
+  }
+}
+
+async function sendMobOTP() {
+  if (!validateMobLogin()) { showToast('Enter a valid mobile number.','error'); return; }
+
+  const btn = document.getElementById('sendMobBtn');
+  btn.innerHTML = '<span class="spinner"></span>Sending…';
+  btn.disabled = true;
+
+  const mob = document.getElementById('mobLogin').value.trim();
+  liveMob_OTP = generateOTP();
+
+  const smsSent = await sendSMSOTP(mob, liveMob_OTP);
+
+  btn.innerHTML = 'Send OTP →';
+  btn.disabled = false;
+
+  document.getElementById('mobOTPHint').textContent = '+91 ' + mob.replace(/^\+91/,'').replace(/\s+/g,'');
+
+  // Clear previous OTP inputs
+  [0,1,2,3,4,5].forEach(i => {
+    const el = document.getElementById('motp'+i);
+    el.value=''; el.classList.remove('filled');
+  });
+
+  const fallbackBox = document.getElementById('mobOtpFallback');
+  if (smsSent) {
+    fallbackBox.style.display = 'none';
+    showToast('📱 OTP sent via SMS to ' + mob, 'success');
+  } else {
+    // Show on-screen fallback if SMS API fails (e.g. CORS / no credits)
+    document.getElementById('mobOtpDisplay').textContent = liveMob_OTP;
+    fallbackBox.style.display = 'block';
+    showToast('⚠ SMS delivery unavailable — showing OTP on screen instead.','warning');
+  }
+
+  document.getElementById('mobOTPSection').style.display = 'block';
+  startMobCountdown();
+  setTimeout(() => document.getElementById('motp0').focus(), 100);
+}
+
+function startMobCountdown() {
+  clearInterval(mobCountdownTimer);
+  let secs = 30;
+  const countEl  = document.getElementById('mobCountdown');
+  const resendEl = document.getElementById('mobResendLink');
+  if (resendEl) { resendEl.style.pointerEvents='none'; resendEl.style.opacity='0.4'; }
+  countEl.textContent = '(30s)';
+  mobCountdownTimer = setInterval(() => {
+    secs--;
+    countEl.textContent = '(' + secs + 's)';
+    if (secs <= 0) {
+      clearInterval(mobCountdownTimer);
+      countEl.textContent = '';
+      if (resendEl) { resendEl.style.pointerEvents='auto'; resendEl.style.opacity='1'; }
+    }
+  }, 1000);
+}
+
+async function resendMobOTP(e) {
+  e.preventDefault();
+  const mob = document.getElementById('mobLogin').value.trim();
+  liveMob_OTP = generateOTP();
+
+  const link = document.getElementById('mobResendLink');
+  link.textContent = 'Sending…';
+
+  const smsSent = await sendSMSOTP(mob, liveMob_OTP);
+  link.textContent = 'Resend OTP';
+
+  [0,1,2,3,4,5].forEach(i => {
+    const el = document.getElementById('motp'+i);
+    el.value=''; el.classList.remove('filled');
+  });
+  document.getElementById('motp0').focus();
+
+  const fallbackBox = document.getElementById('mobOtpFallback');
+  if (smsSent) {
+    fallbackBox.style.display = 'none';
+    showToast('📱 New OTP sent via SMS!','success');
+  } else {
+    document.getElementById('mobOtpDisplay').textContent = liveMob_OTP;
+    fallbackBox.style.display = 'block';
+    showToast('⚠ SMS unavailable — new OTP shown on screen.','warning');
+  }
+  startMobCountdown();
+}
+
+function motpInput(i){ let v=document.getElementById('motp'+i).value.replace(/\D/g,''); document.getElementById('motp'+i).value=v; if(v&&i<5)document.getElementById('motp'+(i+1)).focus(); if(v)document.getElementById('motp'+i).classList.add('filled'); else document.getElementById('motp'+i).classList.remove('filled'); }
+function motpKey(e,i){ if(e.key==='Backspace'&&!document.getElementById('motp'+i).value&&i>0)document.getElementById('motp'+(i-1)).focus(); }
+function verifyMobOTP() {
+  let code=[0,1,2,3,4,5].map(i=>document.getElementById('motp'+i).value).join('');
+  if (code.length < 6) { showToast('Enter the complete 6-digit OTP.','error'); return; }
+  if (code !== liveMob_OTP) {
+    showToast('Incorrect OTP. Please try again.','error');
+    [0,1,2,3,4,5].forEach(i => { document.getElementById('motp'+i).value=''; document.getElementById('motp'+i).classList.remove('filled'); });
+    document.getElementById('motp0').focus();
+    return;
+  }
+  clearInterval(mobCountdownTimer);
+  document.getElementById('lastLogin').textContent = new Date().toLocaleString('en-IN');
+  document.getElementById('deviceInfo').textContent = 'Mobile · ' + navigator.platform;
+  const _mob = document.getElementById('mobLogin').value.trim();
+  sessionStorage.setItem('ls_user', JSON.stringify({ email: _mob, name: 'User', loginTime: Date.now() }));
+  document.getElementById('loginFlow').querySelectorAll('.auth-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('L3').classList.add('active');
+  showToast('✅ Signed in via OTP!','success');
+  setTimeout(() => { location.href = 'index.html'; }, 2000);
+}
+
+// ─── FORGOT PASSWORD FLOW ──────────────────────────────
+function showForgot(e) {
+  e.preventDefault();
+  document.getElementById('loginFlow').style.display='none';
+  document.getElementById('forgotFlow').style.display='block';
+  showFPSection('FP1');
+}
+function backToLogin() {
+  document.getElementById('forgotFlow').style.display='none';
+  document.getElementById('loginFlow').style.display='block';
+  showSection('L1');
+}
+
+async function sendResetOTP() {
+  if (!validateFPEmail()) { showToast('Enter a valid email address.','error'); return; }
+  const email = document.getElementById('fpEmail').value.trim();
+  document.getElementById('fpEmailShow').textContent = email;
+  liveReset_OTP = generateOTP();
+  showToast('Sending OTP to ' + email + '…','info');
+  const sent = await sendOTPEmail(email, email.split('@')[0], liveReset_OTP, 'Password Reset OTP');
+  if (sent) {
+    showFPSection('FP2');
+    showToast('Reset OTP sent to ' + email + '! Check your inbox.','success');
+  } else {
+    showToast('Failed to send OTP. Please try again.','error');
+  }
+}
+
+async function resendResetOTP(e) {
+  e.preventDefault();
+  const email = document.getElementById('fpEmail').value.trim();
+  if (!email) { showToast('Email not found. Go back and enter your email.', 'error'); return; }
+  liveReset_OTP = generateOTP();
+  showToast('Resending OTP to ' + email + '…', 'info');
+  const sent = await sendOTPEmail(email, email.split('@')[0], liveReset_OTP, 'Password Reset OTP');
+  if (sent) showToast('New OTP sent to ' + email + '!', 'success');
+  else showToast('Failed to resend OTP. Please try again.', 'error');
+}
+
+function fpOtpInput(i){ let v=document.getElementById('fpotp'+i).value.replace(/\D/g,''); document.getElementById('fpotp'+i).value=v; if(v&&i<5)document.getElementById('fpotp'+(i+1)).focus(); if(v)document.getElementById('fpotp'+i).classList.add('filled'); else document.getElementById('fpotp'+i).classList.remove('filled'); }
+function fpOtpKey(e,i){ if(e.key==='Backspace'&&!document.getElementById('fpotp'+i).value&&i>0)document.getElementById('fpotp'+(i-1)).focus(); }
+
+function verifyResetOTP() {
+  let code=[0,1,2,3,4,5].map(i=>document.getElementById('fpotp'+i).value).join('');
+  if (code.length<6) { showToast('Enter the complete 6-digit OTP.','error'); return; }
+  if (!liveReset_OTP) { showToast('No OTP found. Please request a new one.','error'); return; }
+  if (code !== liveReset_OTP) { showToast('Incorrect OTP. Please try again.','error'); return; }
+  showFPSection('FP3');
+}
+function verifySecAnswer() {
+  let ans=document.getElementById('secAnswer').value.trim().toLowerCase();
+  // Demo: accept any answer with 2+ chars
+  if (ans.length < 2) { showToast('Please provide your security answer.','error'); return; }
+  showFPSection('FP4');
+}
+
+// Password strength for reset
+function checkNewPass() {
+  let p=document.getElementById('newPass').value;
+  let rules={len:p.length>=8,upper:/[A-Z]/.test(p),lower:/[a-z]/.test(p),num:/[0-9]/.test(p),special:/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p),history:p!=='Admin@123'};
+  ['len','upper','lower','num','special','history'].forEach(k=>{
+    let el=document.getElementById('nr-'+k);
+    el.className='rule'+(rules[k]?' pass':(p.length>0?' fail':''));
+  });
+  let score=Object.values(rules).filter(Boolean).length;
+  let colors=['#ddd','#ff7c7c','#ff7c7c','#f5c842','#5de8a0','#5de8a0','#5de8a0'];
+  let labels=['','Very Weak','Weak','Fair','Strong','Very Strong','Excellent'];
+  let lColors=['var(--muted)','#cc3333','#cc3333','#8a5700','#1a6b3c','#1a6b3c','#1a6b3c'];
+  for(let i=1;i<=4;i++) document.getElementById('nsb'+i).style.background=(i<=Math.ceil(score*4/6)&&score>0)?colors[score]:'#ddd';
+  let lbl=document.getElementById('nStrengthLabel');
+  lbl.textContent=p.length===0?'Enter a password':labels[score];
+  lbl.style.color=lColors[score];
+  checkNewConf();
+  return score>=4&&rules.len;
+}
+function checkNewConf() {
+  let p=document.getElementById('newPass').value;
+  let c=document.getElementById('newPassConf').value;
+  let el=document.getElementById('newConfMsg');
+  if (!c) { el.className='field-msg'; return false; }
+  if (p!==c) { el.textContent='Passwords do not match'; el.className='field-msg show err'; return false; }
+  el.textContent='✓ Passwords match'; el.className='field-msg show ok'; return true;
+}
+function resetPassword() {
+  if (!checkNewPass()) { showToast('Password does not meet complexity requirements.','error'); return; }
+  if (!checkNewConf()) { showToast('Passwords do not match.','error'); return; }
+  // Save the new password so user can log in with it
+  const email = document.getElementById('fpEmail').value.trim();
+  const newPass = document.getElementById('newPass').value;
+  if (email) saveUser(email, newPass, email.split('@')[0]);
+  showFPSection('FP5');
+  showToast('Password reset successfully! You can now sign in.','success');
+}
+
+// ─── UTILS ─────────────────────────────────────────────
+function togglePass(id,btn){
+  let inp=document.getElementById(id);
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
+  else{inp.type='password';btn.textContent='👁';}
+}
+
+// ─── GOOGLE OAUTH (GSI SDK popup — modern approach) ───────────────────────────
+const GOOGLE_CLIENT_ID = '385189104800-mr1fvhodrf1n9ri3oso7h24g5sqtgfaj.apps.googleusercontent.com';
+
+// Called automatically by GSI SDK after user selects account
+function handleGoogleSignIn(response) {
+  try {
+    // Decode the JWT credential returned by Google
+    const base64Payload = response.credential.split('.')[1]
+      .replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64Payload));
+
+    document.getElementById('lastLogin').textContent = new Date().toLocaleString('en-IN');
+    document.getElementById('deviceInfo').textContent = 'Google · ' + (payload.email || '');
+
+    sessionStorage.setItem('ls_user', JSON.stringify({ email: payload.email, name: payload.name, picture: payload.picture, loginTime: Date.now() }));
+
+    // Save to Firestore
+    if (typeof window.saveGoogleUserToFirestore === 'function') {
+      window.saveGoogleUserToFirestore(payload);
+    }
+
+    document.querySelectorAll('#loginFlow .auth-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('L3').classList.add('active');
+    showToast('✅ Signed in as ' + (payload.name || payload.email), 'success');
+    setTimeout(() => { location.href = 'index.html'; }, 2000);
+
+  } catch (err) {
+    showToast('Google sign-in failed. Please try email login.', 'error');
+    console.error('Google JWT parse error:', err);
+  }
+}
+
+// Triggered by the "Sign in with Google" button
+function triggerGooglePopup() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    showToast('Google SDK not loaded yet. Please wait a moment and try again.', 'warning');
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleSignIn,
+    ux_mode: 'popup'
+  });
+  google.accounts.id.prompt();
+}
+
+// On page load — no redirect callback needed (popup mode handles everything)
+window.onload = function() {
+  // nothing needed for popup flow
+};
+</script>
+</body>
+</html>

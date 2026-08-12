@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Portfolio Overview — LoanScope</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root { --navy:#0a1628;--navy2:#112240;--gold:#c9a84c;--gold-light:#f0d080;--cream:#f8f4ec;--text:#1a2340;--muted:#6b7a99;--white:#ffffff;--border:rgba(201,168,76,0.25);--shadow:0 8px 40px rgba(10,22,40,0.12); }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);}
+  nav{background:var(--navy);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);}
+  .logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold);letter-spacing:1px;text-decoration:none;}
+  .logo span{color:var(--white);}
+  nav ul{list-style:none;display:flex;gap:8px;}
+  nav ul li a{color:rgba(255,255,255,0.75);font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;transition:all 0.2s;font-weight:500;}
+  nav ul li a:hover,nav ul li a.active{color:var(--gold);background:rgba(201,168,76,0.1);}
+  .nav-cta{background:var(--gold);color:var(--navy)!important;font-weight:600!important;border-radius:6px!important;}
+  .page-header{background:var(--navy2);padding:48px;border-bottom:1px solid var(--border);}
+  .page-header-inner{max-width:1100px;margin:0 auto;}
+  .breadcrumb{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:12px;}
+  .breadcrumb a{color:var(--gold);text-decoration:none;}
+  .page-header h1{font-family:'Playfair Display',serif;font-size:38px;color:var(--white);margin-bottom:8px;}
+  .page-header p{color:rgba(255,255,255,0.55);font-size:16px;}
+  .main{max-width:1100px;margin:0 auto;padding:48px;}
+
+  /* KPI STRIP */
+  .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:36px;}
+  .kpi{background:#fff;border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:20px;text-align:center;box-shadow:var(--shadow);}
+  .kpi-val{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:4px;}
+  .kpi-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;}
+  .kpi-change{font-size:12px;margin-top:6px;font-weight:600;}
+  .up{color:#1a6b3c;} .down{color:#cc0000;} .neutral{color:var(--muted);}
+
+  .card{background:#fff;border:1px solid rgba(201,168,76,0.15);border-radius:14px;padding:32px;box-shadow:var(--shadow);}
+  .card h3{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:22px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-bottom:24px;}
+
+  /* BAR CHART */
+  .bar-chart{display:flex;flex-direction:column;gap:12px;}
+  .bc-row{display:flex;align-items:center;gap:12px;}
+  .bc-label{width:120px;font-size:13px;color:var(--muted);flex-shrink:0;text-align:right;}
+  .bc-track{flex:1;background:#f0ece3;border-radius:4px;height:24px;overflow:hidden;position:relative;}
+  .bc-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:600;color:#fff;transition:width 0.6s;}
+  .bc-val{width:80px;font-size:13px;font-weight:600;text-align:right;flex-shrink:0;}
+
+  /* DELINQUENCY BUCKETS */
+  .bucket-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .bucket{border-radius:10px;padding:16px;text-align:center;}
+  .bucket .b-num{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin-bottom:4px;}
+  .bucket .b-label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;}
+  .bucket .b-pct{font-size:13px;margin-top:4px;}
+
+  /* PORTFOLIO TABLE */
+  .ptbl{width:100%;border-collapse:collapse;font-size:14px;}
+  .ptbl th{background:var(--navy);color:var(--gold);padding:12px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;}
+  .ptbl td{padding:12px 14px;border-bottom:1px solid #f0ece3;}
+  .ptbl tr:last-child td{border-bottom:none;}
+  .ptbl tr:nth-child(even) td{background:#faf7f0;}
+  .status{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;}
+  .s-active{background:#d4f7e7;color:#1a6b3c;}
+  .s-npa{background:#fde8e8;color:#8a1a1a;}
+  .s-watch{background:#fff3cd;color:#8a5700;}
+  .s-closed{background:#f0ece3;color:#6b7a99;}
+
+  /* DONUT CANVAS SECTION */
+  .donut-row{display:flex;align-items:center;gap:32px;}
+  .donut-legend{flex:1;}
+  .dl-item{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:14px;}
+  .dl-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+  .dl-name{flex:1;}
+  .dl-val{font-weight:600;}
+
+  #npa{scroll-margin-top:80px;}
+  footer{background:var(--navy);border-top:1px solid var(--border);padding:40px 48px;margin-top:60px;}
+  .footer-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
+  .footer-links{display:flex;gap:24px;}
+  .footer-links a{color:rgba(255,255,255,0.5);font-size:13px;text-decoration:none;}
+  .footer-links a:hover{color:var(--gold);}
+  .footer-copy{color:rgba(255,255,255,0.35);font-size:13px;}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="index.html">Loan<span>Scope</span></a>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="calculator.html">Calculator</a></li>
+    <li><a href="risk.html">Risk Analysis</a></li>
+    <li><a href="portfolio.html" class="active">Portfolio</a></li>
+    <li><a href="reports.html">Reports</a></li>
+    <li id="navAuthArea" style="display:flex;align-items:center;gap:8px;"></li>
+  </ul>
+</nav>
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="breadcrumb"><a href="index.html">Home</a> › Portfolio Overview</div>
+    <h1>Loan Portfolio Dashboard</h1>
+    <p>Real-time overview of loan disbursements, NPA tracking, and sector exposure</p>
+  </div>
+</div>
+
+<div class="main">
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-val">₹84.2Cr</div><div class="kpi-label">Total Outstanding</div><div class="kpi-change up">↑ 6.3% MoM</div></div>
+    <div class="kpi"><div class="kpi-val">1,247</div><div class="kpi-label">Active Loans</div><div class="kpi-change up">↑ 42 new</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#f5c842">3.4%</div><div class="kpi-label">Gross NPA</div><div class="kpi-change up">↓ 0.2% vs last month</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#5de8a0">96.8%</div><div class="kpi-label">Collection Rate</div><div class="kpi-change neutral">→ Steady</div></div>
+    <div class="kpi"><div class="kpi-val">₹6.74L</div><div class="kpi-label">Avg Loan Size</div><div class="kpi-change up">↑ 2.1%</div></div>
+  </div>
+
+  <!-- SECTOR EXPOSURE + DONUT -->
+  <div class="two-col">
+    <div class="card">
+      <h3>Sector-wise Exposure</h3>
+      <div class="bar-chart">
+        <div class="bc-row"><span class="bc-label">Home Loans</span><div class="bc-track"><div class="bc-fill" style="width:42%;background:#c9a84c">42%</div></div><span class="bc-val">₹35.4Cr</span></div>
+        <div class="bc-row"><span class="bc-label">Personal</span><div class="bc-track"><div class="bc-fill" style="width:22%;background:#5de8a0">22%</div></div><span class="bc-val">₹18.5Cr</span></div>
+        <div class="bc-row"><span class="bc-label">Business</span><div class="bc-track"><div class="bc-fill" style="width:18%;background:#378add">18%</div></div><span class="bc-val">₹15.2Cr</span></div>
+        <div class="bc-row"><span class="bc-label">Auto Loans</span><div class="bc-track"><div class="bc-fill" style="width:10%;background:#f5c842">10%</div></div><span class="bc-val">₹8.4Cr</span></div>
+        <div class="bc-row"><span class="bc-label">Education</span><div class="bc-track"><div class="bc-fill" style="width:5%;background:#a77bed">5%</div></div><span class="bc-val">₹4.2Cr</span></div>
+        <div class="bc-row"><span class="bc-label">MSME</span><div class="bc-track"><div class="bc-fill" style="width:3%;background:#ff7c7c">3%</div></div><span class="bc-val">₹2.5Cr</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Risk Profile Distribution</h3>
+      <div class="donut-row">
+        <canvas id="donutCanvas" width="160" height="160"></canvas>
+        <div class="donut-legend">
+          <div class="dl-item"><span class="dl-dot" style="background:#5de8a0"></span><span class="dl-name">Low Risk (A)</span><span class="dl-val">58%</span></div>
+          <div class="dl-item"><span class="dl-dot" style="background:#f5c842"></span><span class="dl-name">Moderate (B)</span><span class="dl-val">28%</span></div>
+          <div class="dl-item"><span class="dl-dot" style="background:#ff7c7c"></span><span class="dl-name">High Risk (C)</span><span class="dl-val">10%</span></div>
+          <div class="dl-item"><span class="dl-dot" style="background:#cc3333"></span><span class="dl-name">NPA (D)</span><span class="dl-val">4%</span></div>
+        </div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0ece3;">
+        <div style="font-size:13px;color:var(--muted);">Avg Portfolio Risk Score</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#5de8a0;margin-top:4px;">724 / 900</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELINQUENCY -->
+  <div class="card" id="npa" style="margin-bottom:24px;">
+    <h3>Delinquency Bucket Analysis (DPD)</h3>
+    <div class="bucket-grid">
+      <div class="bucket" style="background:#e8faf3">
+        <div class="b-num" style="color:#1a6b3c">1,124</div>
+        <div class="b-label" style="color:#1a6b3c">0 DPD</div>
+        <div class="b-pct" style="color:#1a6b3c">Standard</div>
+      </div>
+      <div class="bucket" style="background:#fff8e0">
+        <div class="b-num" style="color:#8a5700">68</div>
+        <div class="b-label" style="color:#8a5700">1–30 DPD</div>
+        <div class="b-pct" style="color:#8a5700">SMA-0</div>
+      </div>
+      <div class="bucket" style="background:#fff3cd">
+        <div class="b-num" style="color:#7a4a00">30</div>
+        <div class="b-label" style="color:#7a4a00">31–60 DPD</div>
+        <div class="b-pct" style="color:#7a4a00">SMA-1</div>
+      </div>
+      <div class="bucket" style="background:#fde8e8">
+        <div class="b-num" style="color:#8a1a1a">17</div>
+        <div class="b-label" style="color:#8a1a1a">61–90 DPD</div>
+        <div class="b-pct" style="color:#8a1a1a">SMA-2</div>
+      </div>
+      <div class="bucket" style="background:#f5e0e0">
+        <div class="b-num" style="color:#cc0000">8</div>
+        <div class="b-label" style="color:#cc0000">&gt;90 DPD</div>
+        <div class="b-pct" style="color:#cc0000">NPA</div>
+      </div>
+    </div>
+    <div style="margin-top:20px;padding:14px 18px;background:#fff8e0;border-left:4px solid #f5c842;border-radius:8px;font-size:14px;color:#7a5c00;">
+      ⚠ 25 accounts are in SMA category — early warning calls should be initiated within 7 days.
+    </div>
+  </div>
+
+  <!-- PORTFOLIO TABLE -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
+      <h3 style="margin-bottom:0;">Active Loan Accounts</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button onclick="downloadCSV()" style="display:flex;align-items:center;gap:7px;background:#e8faf3;color:#1a6b3c;border:1.5px solid #5de8a0;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          📄 Download CSV
+        </button>
+        <button onclick="downloadExcel()" style="display:flex;align-items:center;gap:7px;background:#e8f0ff;color:#1a3a8a;border:1.5px solid #4a7cff;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          📊 Download Excel
+        </button>
+        <button onclick="downloadPDF()" style="display:flex;align-items:center;gap:7px;background:#fde8e8;color:#8a1a1a;border:1.5px solid #ff7c7c;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          📑 Download PDF
+        </button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(201,168,76,0.15);">
+      <table class="ptbl">
+        <thead><tr><th>Loan ID</th><th>Borrower</th><th>Type</th><th>Amount (₹)</th><th>Outstanding (₹)</th><th>Rate</th><th>DPD</th><th>Status</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr><td>HL-20241</td><td>Rajesh Sharma</td><td>Home</td><td>25,00,000</td><td>22,14,500</td><td>8.5%</td><td>0</td><td><span class="status s-active">Active</span></td><td style="color:#1a6b3c">A</td></tr>
+          <tr><td>PL-20842</td><td>Priya Mehta</td><td>Personal</td><td>5,00,000</td><td>3,20,000</td><td>13.5%</td><td>12</td><td><span class="status s-watch">Watch</span></td><td style="color:#8a5700">B</td></tr>
+          <tr><td>BL-10334</td><td>Suresh Traders</td><td>Business</td><td>40,00,000</td><td>35,80,000</td><td>11.0%</td><td>0</td><td><span class="status s-active">Active</span></td><td style="color:#1a6b3c">A</td></tr>
+          <tr><td>AL-20567</td><td>Anita Desai</td><td>Auto</td><td>8,00,000</td><td>6,40,000</td><td>9.5%</td><td>45</td><td><span class="status s-npa">SMA-1</span></td><td style="color:#cc0000">C</td></tr>
+          <tr><td>EL-10089</td><td>Vikram Nair</td><td>Education</td><td>12,00,000</td><td>10,20,000</td><td>9.0%</td><td>0</td><td><span class="status s-active">Active</span></td><td style="color:#1a6b3c">A</td></tr>
+          <tr><td>HL-20988</td><td>Deepika Reddy</td><td>Home</td><td>35,00,000</td><td>32,00,000</td><td>8.75%</td><td>0</td><td><span class="status s-active">Active</span></td><td style="color:#1a6b3c">A+</td></tr>
+          <tr><td>ML-10211</td><td>Ravi Enterprises</td><td>MSME</td><td>20,00,000</td><td>18,50,000</td><td>12.5%</td><td>95</td><td><span class="status s-npa">NPA</span></td><td style="color:#cc0000">D</td></tr>
+          <tr><td>PL-20734</td><td>Sunita Joshi</td><td>Personal</td><td>3,00,000</td><td>0</td><td>14.0%</td><td>0</td><td><span class="status s-closed">Closed</span></td><td style="color:#6b7a99">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:16px;flex-wrap:wrap;">
+      <a href="reports.html" style="background:var(--gold);color:var(--navy);padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Generate Portfolio Report →</a>
+      <a href="risk.html" style="border:1.5px solid rgba(201,168,76,0.4);color:var(--gold);padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:500;font-size:14px;">Re-assess Risk →</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <a class="logo" href="index.html" style="font-size:18px;">Loan<span>Scope</span></a>
+    <div class="footer-links">
+      <a href="index.html">Home</a><a href="calculator.html">Calculator</a>
+      <a href="risk.html">Risk</a><a href="portfolio.html">Portfolio</a><a href="reports.html">Reports</a>
+    </div>
+    <div class="footer-copy">© 2026 LoanScope Analytics</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  let c=document.getElementById('donutCanvas');
+  let ctx=c.getContext('2d');
+  let segs=[{pct:0.58,col:'#5de8a0'},{pct:0.28,col:'#f5c842'},{pct:0.10,col:'#ff7c7c'},{pct:0.04,col:'#cc3333'}];
+  let start=-Math.PI/2,cx=80,cy=80,R=65,inner=40;
+  segs.forEach(s=>{
+    let end=start+s.pct*2*Math.PI;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,start,end);
+    ctx.closePath();ctx.fillStyle=s.col;ctx.fill();
+    start=end;
+  });
+  ctx.beginPath();ctx.arc(cx,cy,inner,0,2*Math.PI);
+  ctx.fillStyle='#fff';ctx.fill();
+  ctx.fillStyle='#0a1628';ctx.font='bold 15px DM Sans';ctx.textAlign='center';
+  ctx.fillText('1,247',cx,cy+2);ctx.fillStyle='#6b7a99';ctx.font='10px DM Sans';
+  ctx.fillText('Loans',cx,cy+14);
+})();
+</script>
+
+
+<script>
+// ── Portfolio Data ─────────────────────────────────────────────────────────
+const portfolioData = [
+  {id:'HL-20241',borrower:'Rajesh Sharma',type:'Home',amount:'25,00,000',outstanding:'22,14,500',rate:'8.5%',dpd:0,status:'Active',risk:'A'},
+  {id:'PL-20842',borrower:'Priya Mehta',type:'Personal',amount:'5,00,000',outstanding:'3,20,000',rate:'13.5%',dpd:12,status:'Watch',risk:'B'},
+  {id:'BL-10334',borrower:'Suresh Traders',type:'Business',amount:'40,00,000',outstanding:'35,80,000',rate:'11.0%',dpd:0,status:'Active',risk:'A'},
+  {id:'AL-20567',borrower:'Anita Desai',type:'Auto',amount:'8,00,000',outstanding:'6,40,000',rate:'9.5%',dpd:45,status:'SMA-1',risk:'C'},
+  {id:'EL-10089',borrower:'Vikram Nair',type:'Education',amount:'12,00,000',outstanding:'10,20,000',rate:'9.0%',dpd:0,status:'Active',risk:'A'},
+  {id:'HL-20988',borrower:'Deepika Reddy',type:'Home',amount:'35,00,000',outstanding:'32,00,000',rate:'8.75%',dpd:0,status:'Active',risk:'A+'},
+  {id:'ML-10211',borrower:'Ravi Enterprises',type:'MSME',amount:'20,00,000',outstanding:'18,50,000',rate:'12.5%',dpd:95,status:'NPA',risk:'D'},
+  {id:'PL-20734',borrower:'Sunita Joshi',type:'Personal',amount:'3,00,000',outstanding:'0',rate:'14.0%',dpd:0,status:'Closed',risk:'—'},
+];
+
+// Load any assessed loans added from risk page
+function getFullData() {
+  const extra = JSON.parse(sessionStorage.getItem('assessed_loans') || '[]');
+  return [...portfolioData, ...extra];
+}
+
+// ── CSV Download ────────────────────────────────────────────────────────────
+function downloadCSV() {
+  const data = getFullData();
+  const headers = ['Loan ID','Borrower','Type','Amount (₹)','Outstanding (₹)','Rate','DPD','Status','Risk'];
+  const rows = data.map(r => [r.id,r.borrower,r.type,r.amount,r.outstanding,r.rate,r.dpd,r.status,r.risk]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'LoanScope_Portfolio_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ── Excel Download ──────────────────────────────────────────────────────────
+function downloadExcel() {
+  const data = getFullData();
+  const wsData = [
+    ['Loan ID','Borrower','Type','Amount (₹)','Outstanding (₹)','Rate','DPD','Status','Risk'],
+    ...data.map(r => [r.id,r.borrower,r.type,r.amount,r.outstanding,r.rate,r.dpd,r.status,r.risk])
+  ];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:12},{wch:20},{wch:12},{wch:14},{wch:16},{wch:8},{wch:6},{wch:10},{wch:6}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Portfolio');
+
+  // KPI sheet
+  const kpiData = [
+    ['Metric','Value'],
+    ['Total Outstanding','₹84.2Cr'],
+    ['Active Loans','1,247'],
+    ['Gross NPA','3.4%'],
+    ['Collection Rate','96.8%'],
+    ['Avg Loan Size','₹6.74L'],
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(kpiData);
+  XLSX.utils.book_append_sheet(wb, ws2, 'KPIs');
+  XLSX.writeFile(wb, 'LoanScope_Portfolio_' + new Date().toISOString().slice(0,10) + '.xlsx');
+}
+
+// ── PDF Download ────────────────────────────────────────────────────────────
+function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  // Header
+  doc.setFillColor(10, 22, 40);
+  doc.rect(0, 0, 297, 28, 'F');
+  doc.setTextColor(201, 168, 76);
+  doc.setFontSize(18);
+  doc.text('LoanScope Analytics', 14, 12);
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Loan Portfolio Report  ·  Generated: ' + new Date().toLocaleDateString('en-IN'), 14, 21);
+
+  // KPI row
+  doc.setTextColor(10, 22, 40);
+  doc.setFontSize(9);
+  const kpis = [['Total Outstanding','₹84.2Cr'],['Active Loans','1,247'],['Gross NPA','3.4%'],['Collection Rate','96.8%']];
+  kpis.forEach((k, i) => {
+    const x = 14 + i * 70;
+    doc.setFillColor(248, 244, 236);
+    doc.roundedRect(x, 32, 64, 16, 3, 3, 'F');
+    doc.setFontSize(14);
+    doc.setTextColor(10, 22, 40);
+    doc.text(k[1], x + 32, 41, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setTextColor(107, 122, 153);
+    doc.text(k[0], x + 32, 46, { align: 'center' });
+  });
+
+  // Table
+  const data = getFullData();
+  doc.autoTable({
+    startY: 54,
+    head: [['Loan ID','Borrower','Type','Amount (₹)','Outstanding (₹)','Rate','DPD','Status','Risk']],
+    body: data.map(r => [r.id,r.borrower,r.type,r.amount,r.outstanding,r.rate,r.dpd,r.status,r.risk]),
+    headStyles: { fillColor: [10,22,40], textColor: [201,168,76], fontSize: 9 },
+    bodyStyles: { fontSize: 9 },
+    alternateRowStyles: { fillColor: [250,247,240] },
+    styles: { font: 'helvetica', cellPadding: 3 },
+    columnStyles: { 8: { halign: 'center' } }
+  });
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text('LoanScope Analytics · Confidential · Page ' + i + ' of ' + pageCount, 148, 205, { align: 'center' });
+  }
+
+  doc.save('LoanScope_Portfolio_' + new Date().toISOString().slice(0,10) + '.pdf');
+}
+
+// ── Render table (including assessed loans from sessionStorage) ───────────────
+function renderPortfolioTable() {
+  const data = getFullData();
+  const tbody = document.querySelector('.ptbl tbody');
+  if (!tbody) return;
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td>${r.id}</td>
+      <td>${r.borrower}</td>
+      <td>${r.type}</td>
+      <td>${r.amount}</td>
+      <td>${r.outstanding}</td>
+      <td>${r.rate}</td>
+      <td>${r.dpd}</td>
+      <td><span class="status ${statusClass(r.status)}">${r.status}</span></td>
+      <td style="color:${riskColor(r.risk)};font-weight:700">${r.risk}</td>
+    </tr>`).join('');
+}
+function statusClass(s) {
+  if (s==='Active') return 's-active';
+  if (s==='NPA' || s==='SMA-1' || s==='SMA-2') return 's-npa';
+  if (s==='Watch') return 's-watch';
+  if (s==='Closed') return 's-closed';
+  return 's-active';
+}
+function riskColor(r) {
+  if (r==='A'||r==='A+') return '#1a6b3c';
+  if (r==='B') return '#8a5700';
+  if (r==='C'||r==='D') return '#cc0000';
+  return '#6b7a99';
+}
+document.addEventListener('DOMContentLoaded', renderPortfolioTable);
+</script>
+
+<script>
+// ─── AUTH GUARD (shared across all pages) ─────────────────────────────────
+(function() {
+  const PUBLIC_PAGES = ['signin.html', 'signup.html'];
+  const currentPage  = location.pathname.split('/').pop() || 'index.html';
+  const isPublic     = PUBLIC_PAGES.some(p => currentPage.includes(p));
+
+  function getUser() {
+    try { return JSON.parse(sessionStorage.getItem('ls_user') || 'null'); } catch { return null; }
+  }
+
+  // ── Redirect unauthenticated users away from protected pages ──
+  if (!isPublic && !getUser()) {
+    sessionStorage.setItem('ls_redirect', location.href);
+    location.href = 'signin.html';
+    return;
+  }
+
+  // ── After DOM ready: render nav avatar or sign-in buttons ──
+  document.addEventListener('DOMContentLoaded', function() {
+    const user = getUser();
+    const navRight = document.getElementById('navAuthArea');
+    if (!navRight) return;
+
+    if (user) {
+      const initials = (user.name || user.email || 'U')
+        .split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+      navRight.innerHTML = `
+        <div style="position:relative;display:inline-block;">
+          <button onclick="toggleProfileMenu()" style="
+            display:flex;align-items:center;gap:10px;background:rgba(201,168,76,0.12);
+            border:1.5px solid rgba(201,168,76,0.4);border-radius:50px;padding:6px 14px 6px 6px;
+            cursor:pointer;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;">
+            <div style="
+              width:34px;height:34px;border-radius:50%;background:var(--gold,#c9a84c);
+              display:flex;align-items:center;justify-content:center;
+              font-weight:700;color:#0a1628;font-size:13px;flex-shrink:0;">${initials}</div>
+            <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${user.name || user.email.split('@')[0]}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="rgba(255,255,255,0.6)">
+              <path d="M2 4l4 4 4-4"/>
+            </svg>
+          </button>
+          <div id="profileMenu" style="
+            display:none;position:absolute;right:0;top:calc(100% + 8px);
+            background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);
+            min-width:220px;overflow:hidden;z-index:999;border:1px solid #eee;">
+            <div style="padding:16px 18px;border-bottom:1px solid #f0ece3;background:#faf8f4;">
+              <div style="font-weight:700;color:#1a2340;font-size:14px;">${user.name || 'User'}</div>
+              <div style="font-size:12px;color:#6b7a99;margin-top:2px;">${user.email || ''}</div>
+            </div>
+            <a href="index.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              🏠 Dashboard
+            </a>
+            <a href="portfolio.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              📊 My Portfolio
+            </a>
+            <a href="reports.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              📋 Reports
+            </a>
+            <button onclick="logoutUser()" style="
+              display:flex;align-items:center;gap:10px;padding:12px 18px;width:100%;
+              border:none;background:none;cursor:pointer;color:#cc3333;font-size:14px;
+              font-family:'DM Sans',sans-serif;text-align:left;">
+              🚪 Sign Out
+            </button>
+          </div>
+        </div>`;
+    } else {
+      navRight.innerHTML = `
+        <a href="signin.html" style="color:rgba(255,255,255,0.75);font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:500;">Sign In</a>
+        <a href="signup.html" style="background:var(--gold,#c9a84c);color:#0a1628;font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:600;">Sign Up Free</a>`;
+    }
+  });
+
+  function toggleProfileMenu() {
+    const m = document.getElementById('profileMenu');
+    if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#navAuthArea')) {
+      const m = document.getElementById('profileMenu');
+      if (m) m.style.display = 'none';
+    }
+  });
+
+  function logoutUser() {
+    sessionStorage.removeItem('ls_user');
+    location.href = 'signin.html';
+  }
+
+  window.toggleProfileMenu = toggleProfileMenu;
+  window.logoutUser = logoutUser;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign Up — LoanScope</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  (function(){ emailjs.init({ publicKey: '5hVNXEPgombioDmCw' }); })();
+</script>
+<!-- ✅ Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDE-EpxSU356Y-M8tVDVOuuSWBsUvSXf9g",
+    authDomain: "loanscope-a31b7.firebaseapp.com",
+    projectId: "loanscope-a31b7",
+    storageBucket: "loanscope-a31b7.firebasestorage.app",
+    messagingSenderId: "494380279336",
+    appId: "1:494380279336:web:9074d530893fa4cbc3b8bd",
+    measurementId: "G-J917GWQV1Z"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // Expose saveUserToFirestore globally so verifyOTP() can call it
+  window.saveUserToFirestore = async function(userData) {
+    try {
+      const docRef = doc(db, 'users', userData.email.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now());
+      await setDoc(docRef, {
+        firstName:    userData.firstName,
+        lastName:     userData.lastName,
+        email:        userData.email,
+        mobile:       userData.mobile,
+        dob:          userData.dob,
+        org:          userData.org,
+        role:         userData.role,
+        signupMethod: userData.signupMethod || 'email',
+        otpVerified:  true,
+        createdAt:    serverTimestamp()
+      });
+      console.log('✅ User saved to Firestore');
+      return true;
+    } catch (err) {
+      console.error('❌ Firestore error:', err);
+      return false;
+    }
+  };
+</script>
+<style>
+:root{--navy:#0a1628;--navy2:#112240;--gold:#c9a84c;--gold-light:#f0d080;--cream:#f8f4ec;--text:#1a2340;--muted:#6b7a99;--white:#ffffff;--border:rgba(201,168,76,0.25);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);min-height:100vh;display:flex;flex-direction:column;}
+
+nav{padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold);letter-spacing:1px;text-decoration:none;}
+.logo span{color:var(--white);}
+.nav-right{font-size:14px;color:rgba(255,255,255,0.5);}
+.nav-right a{color:var(--gold);text-decoration:none;font-weight:600;margin-left:6px;}
+
+.page-wrap{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 68px);}
+
+/* LEFT */
+.left-panel{background:linear-gradient(160deg,#0a1628 0%,#112240 50%,#1a3560 100%);padding:60px 52px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;border-right:1px solid var(--border);}
+.left-panel::before{content:'';position:absolute;bottom:-100px;left:-100px;width:500px;height:500px;background:radial-gradient(circle,rgba(201,168,76,0.07) 0%,transparent 70%);border-radius:50%;}
+.left-tag{font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-bottom:20px;}
+.left-panel h2{font-family:'Playfair Display',serif;font-size:40px;color:var(--white);line-height:1.2;margin-bottom:18px;}
+.left-panel h2 em{color:var(--gold);font-style:normal;}
+.left-panel p{color:rgba(255,255,255,0.55);font-size:15px;line-height:1.7;margin-bottom:40px;}
+.feature-list{list-style:none;}
+.feature-list li{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid rgba(201,168,76,0.1);color:rgba(255,255,255,0.75);font-size:14px;line-height:1.5;}
+.feature-list li:last-child{border-bottom:none;}
+.fi{width:32px;height:32px;border-radius:8px;background:rgba(201,168,76,0.12);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:2px;}
+.trust-strip{display:flex;gap:16px;margin-top:36px;flex-wrap:wrap;}
+.trust-badge{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;color:rgba(255,255,255,0.5);}
+
+/* RIGHT */
+.right-panel{background:var(--cream);padding:48px 52px;display:flex;flex-direction:column;justify-content:center;overflow-y:auto;}
+.form-header{margin-bottom:28px;}
+.form-header h1{font-family:'Playfair Display',serif;font-size:30px;color:var(--text);margin-bottom:6px;}
+.form-header p{color:var(--muted);font-size:14px;}
+.form-header p a{color:var(--gold);text-decoration:none;font-weight:600;}
+
+/* STEP BAR */
+.step-bar{display:flex;gap:0;margin-bottom:10px;border-radius:8px;overflow:hidden;}
+.step{flex:1;height:4px;background:#ddd;transition:background 0.3s;}
+.step.active{background:var(--gold);}
+.step.done{background:#5de8a0;}
+.step-labels{display:flex;justify-content:space-between;margin-bottom:24px;}
+.step-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;transition:color 0.3s;}
+.step-label.active{color:var(--gold);}
+.step-label.done{color:#1a6b3c;}
+
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.fg{margin-bottom:16px;position:relative;}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;}
+.fg input,.fg select{width:100%;padding:12px 14px;font-size:15px;font-family:'DM Sans',sans-serif;border:1.5px solid #ddd;border-radius:9px;background:#fff;outline:none;color:var(--text);transition:border-color 0.2s,box-shadow 0.2s;}
+.fg input:focus,.fg select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.12);}
+.fg input.valid{border-color:#5de8a0;}
+.fg input.invalid{border-color:#ff7c7c;}
+.pass-wrap{position:relative;}
+.pass-wrap input{padding-right:48px;}
+.eye-btn{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:0;}
+.field-msg{font-size:12px;margin-top:5px;display:none;}
+.field-msg.show{display:block;}
+.field-msg.ok{color:#1a6b3c;}
+.field-msg.err{color:#cc3333;}
+
+/* PASSWORD STRENGTH */
+.strength-bar{display:flex;gap:4px;margin-top:8px;}
+.sb{height:4px;flex:1;border-radius:2px;background:#ddd;transition:background 0.3s;}
+.strength-label{font-size:12px;margin-top:5px;font-weight:600;color:var(--muted);}
+.pwd-rules{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.rule{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;transition:color 0.2s;}
+.rule .dot{width:6px;height:6px;border-radius:50%;background:#ddd;flex-shrink:0;transition:background 0.2s;}
+.rule.pass{color:#1a6b3c;}
+.rule.pass .dot{background:#5de8a0;}
+.rule.fail{color:#cc3333;}
+.rule.fail .dot{background:#ff7c7c;}
+
+/* BUTTONS */
+.btn-primary{width:100%;padding:14px;background:var(--gold);color:var(--navy);border:none;border-radius:9px;font-size:16px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;letter-spacing:0.3px;margin-top:4px;}
+.btn-primary:hover{background:var(--gold-light);transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,0.3);}
+.btn-secondary{width:100%;padding:12px;background:transparent;color:var(--text);border:1.5px solid #ddd;border-radius:9px;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-top:10px;}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
+
+/* DIVIDER */
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0;}
+.divider span{color:var(--muted);font-size:12px;white-space:nowrap;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#ddd;}
+
+/* SOCIAL */
+.social-btn{width:100%;padding:12px;border:1.5px solid #ddd;border-radius:9px;background:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text);transition:all 0.2s;margin-bottom:10px;}
+.social-btn:hover{border-color:var(--gold);background:#fff9ee;}
+
+/* OTP */
+.otp-grid{display:flex;gap:10px;justify-content:center;margin:18px 0;}
+.otp-grid input{width:50px;height:54px;text-align:center;font-size:22px;font-weight:700;border:1.5px solid #ddd;border-radius:9px;outline:none;font-family:'DM Sans',sans-serif;color:var(--text);transition:border-color 0.2s,box-shadow 0.2s;}
+.otp-grid input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.15);}
+.otp-grid input.filled{border-color:#5de8a0;background:#f0fff8;}
+
+/* TERMS */
+.terms-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;font-size:13px;color:var(--muted);}
+.terms-row input[type=checkbox]{margin-top:2px;accent-color:var(--gold);width:15px;height:15px;flex-shrink:0;cursor:pointer;}
+.terms-row a{color:var(--gold);text-decoration:none;}
+
+/* SUCCESS */
+.success-wrap{text-align:center;padding:10px 0;}
+.success-icon{font-size:56px;margin-bottom:14px;}
+.success-wrap h2{font-family:'Playfair Display',serif;font-size:26px;color:var(--text);margin-bottom:8px;}
+.success-wrap p{color:var(--muted);font-size:14px;line-height:1.6;}
+
+/* STEP SECTIONS */
+.step-section{display:none;}
+.step-section.active{display:block;}
+
+/* GOOGLE BUTTON WRAPPER */
+.google-btn-wrap{margin-bottom:10px;display:flex;justify-content:center;}
+.google-btn-wrap > div{width:100% !important;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all 0.35s;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{background:#d4f7e7;color:#1a6b3c;border-left:4px solid #5de8a0;}
+.toast.error{background:#fde8e8;color:#8a1a1a;border-left:4px solid #ff7c7c;}
+.toast.info{background:#e8f0ff;color:#1a3a8a;border-left:4px solid #4a7cff;}
+.toast.warning{background:#fff3cd;color:#7a5c00;border-left:4px solid #f5c842;}
+
+/* GOOGLE PROFILE CARD */
+.google-profile-card{display:none;background:#f0fff8;border:1.5px solid #5de8a0;border-radius:10px;padding:14px 16px;margin-bottom:16px;align-items:center;gap:12px;}
+.google-profile-card.show{display:flex;}
+.gpc-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #5de8a0;}
+.gpc-avatar-placeholder{width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;font-size:16px;flex-shrink:0;}
+.gpc-info{flex:1;}
+.gpc-name{font-weight:600;font-size:14px;color:var(--text);}
+.gpc-email{font-size:12px;color:var(--muted);margin-top:2px;}
+.gpc-badge{font-size:11px;color:#1a6b3c;font-weight:600;margin-top:3px;}
+
+footer{background:var(--navy);padding:18px 48px;text-align:center;border-top:1px solid var(--border);}
+footer p{color:rgba(255,255,255,0.3);font-size:12px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">Loan<span>Scope</span></a>
+  <div class="nav-right">Already have an account? <a href="signin.html">Sign In</a></div>
+</nav>
+
+<!-- Google One Tap (hidden, fires callback) -->
+<div id="g_id_onload"
+     data-client_id="385189104800-mr1fvhodrf1n9ri3oso7h24g5sqtgfaj.apps.googleusercontent.com"
+     data-context="signup"
+     data-ux_mode="popup"
+     data-callback="handleGoogleResponse"
+     data-auto_prompt="false">
+</div>
+
+<div class="page-wrap">
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="left-tag">Join LoanScope</div>
+    <h2>Smart <em>Loan</em> Analysis Starts Here</h2>
+    <p>Create your account and get access to India's most comprehensive bank loan analytics platform.</p>
+    <ul class="feature-list">
+      <li><span class="fi">🧮</span><div><strong style="color:#fff">EMI Calculator</strong><br/>Full amortisation across all loan types</div></li>
+      <li><span class="fi">🛡️</span><div><strong style="color:#fff">Credit Risk Engine</strong><br/>AI-powered borrower scoring with CIBIL</div></li>
+      <li><span class="fi">📊</span><div><strong style="color:#fff">Portfolio Dashboard</strong><br/>Real-time NPA tracking and DPD monitoring</div></li>
+      <li><span class="fi">📋</span><div><strong style="color:#fff">Regulatory Reports</strong><br/>RBI-aligned filings and CIBIL submissions</div></li>
+    </ul>
+    <div class="trust-strip">
+      <span class="trust-badge">🔒 256-bit SSL</span>
+      <span class="trust-badge">🏦 RBI Compliant</span>
+      <span class="trust-badge">✅ ISO 27001</span>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="form-header">
+      <h1>Create Account</h1>
+      <p>Already registered? <a href="signin.html">Sign in here</a></p>
+    </div>
+
+    <!-- STEP PROGRESS -->
+    <div class="step-bar" id="stepBar">
+      <div class="step active" id="bar1"></div>
+      <div class="step" id="bar2"></div>
+      <div class="step" id="bar3"></div>
+    </div>
+    <div class="step-labels" id="stepLabels">
+      <span class="step-label active" id="lbl1">Personal Info</span>
+      <span class="step-label" id="lbl2">Set Password</span>
+      <span class="step-label" id="lbl3">Verify OTP</span>
+    </div>
+
+    <!-- ══════ STEP 1: PERSONAL INFO ══════ -->
+    <div class="step-section active" id="step1">
+
+      <!-- Google Profile Card (shown after Google sign-in) -->
+      <div class="google-profile-card" id="googleProfileCard">
+        <div class="gpc-avatar-placeholder" id="gpcInitials">G</div>
+        <div class="gpc-info">
+          <div class="gpc-name" id="gpcName">—</div>
+          <div class="gpc-email" id="gpcEmail">—</div>
+          <div class="gpc-badge">✅ Verified via Google</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="fg">
+          <label>First Name</label>
+          <input type="text" id="firstName" placeholder="Rajesh" oninput="validateName('firstName','fNameMsg')"/>
+          <span class="field-msg" id="fNameMsg"></span>
+        </div>
+        <div class="fg">
+          <label>Last Name</label>
+          <input type="text" id="lastName" placeholder="Sharma" oninput="validateName('lastName','lNameMsg')"/>
+          <span class="field-msg" id="lNameMsg"></span>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Email Address</label>
+        <input type="email" id="email" placeholder="rajesh@bank.com" oninput="validateEmail()"/>
+        <span class="field-msg" id="emailMsg"></span>
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label>Mobile Number</label>
+          <input type="tel" id="mobile" placeholder="+91 98765 43210" oninput="validateMobile()"/>
+          <span class="field-msg" id="mobileMsg"></span>
+        </div>
+        <div class="fg">
+          <label>Date of Birth</label>
+          <input type="date" id="dob" onchange="validateDOB()"/>
+          <span class="field-msg" id="dobMsg"></span>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Organisation / Bank Name</label>
+        <input type="text" id="org" placeholder="State Bank of India" oninput="validateOrg()"/>
+        <span class="field-msg" id="orgMsg"></span>
+      </div>
+      <div class="fg">
+        <label>Role</label>
+        <select id="role">
+          <option value="">— Select your role —</option>
+          <option>Loan Officer</option>
+          <option>Credit Analyst</option>
+          <option>Branch Manager</option>
+          <option>Risk Manager</option>
+          <option>Compliance Officer</option>
+          <option>Portfolio Manager</option>
+          <option>Individual / Self</option>
+        </select>
+        <span class="field-msg" id="roleMsg"></span>
+      </div>
+
+      <button class="btn-primary" onclick="goStep2()">Continue →</button>
+
+      <div class="divider"><span>or sign up with</span></div>
+
+      <!-- Google Sign-In Button (always show custom styled button) -->
+      <button class="social-btn" onclick="triggerGoogleSignup()" style="width:100%;margin-bottom:0;">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+
+    </div>
+
+    <!-- ══════ STEP 2: PASSWORD ══════ -->
+    <div class="step-section" id="step2">
+      <div class="fg">
+        <label>Create Password</label>
+        <div class="pass-wrap">
+          <input type="password" id="password" placeholder="Min. 8 characters" oninput="checkPassword()"/>
+          <button class="eye-btn" type="button" onclick="togglePass('password',this)">👁</button>
+        </div>
+        <div class="strength-bar">
+          <div class="sb" id="sb1"></div><div class="sb" id="sb2"></div>
+          <div class="sb" id="sb3"></div><div class="sb" id="sb4"></div>
+        </div>
+        <div class="strength-label" id="strengthLabel">Enter a password</div>
+        <div class="pwd-rules">
+          <div class="rule" id="r-len"><span class="dot"></span>At least 8 characters</div>
+          <div class="rule" id="r-upper"><span class="dot"></span>One uppercase letter</div>
+          <div class="rule" id="r-lower"><span class="dot"></span>One lowercase letter</div>
+          <div class="rule" id="r-num"><span class="dot"></span>One number</div>
+          <div class="rule" id="r-special"><span class="dot"></span>One special character (!@#$...)</div>
+          <div class="rule" id="r-noname"><span class="dot"></span>Doesn't contain your name</div>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Confirm Password</label>
+        <div class="pass-wrap">
+          <input type="password" id="confirmPass" placeholder="Re-enter password" oninput="checkConfirm()"/>
+          <button class="eye-btn" type="button" onclick="togglePass('confirmPass',this)">👁</button>
+        </div>
+        <span class="field-msg" id="confirmMsg"></span>
+      </div>
+      <div class="fg">
+        <label>Security Question</label>
+        <select id="secQ">
+          <option value="">— Choose a security question —</option>
+          <option>What was the name of your first pet?</option>
+          <option>What city were you born in?</option>
+          <option>What is your mother's maiden name?</option>
+          <option>What was your childhood nickname?</option>
+          <option>What is the name of your favourite teacher?</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Security Answer</label>
+        <input type="text" id="secA" placeholder="Your answer"/>
+      </div>
+      <div class="terms-row">
+        <input type="checkbox" id="terms"/>
+        <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</label>
+      </div>
+      <div class="terms-row">
+        <input type="checkbox" id="marketing"/>
+        <label for="marketing">Send me product updates and regulatory alerts via email.</label>
+      </div>
+      <button class="btn-primary" onclick="goStep3()">Create Account & Verify →</button>
+      <button class="btn-secondary" onclick="setStep(1)">← Back</button>
+    </div>
+
+    <!-- ══════ STEP 3: OTP ══════ -->
+    <div class="step-section" id="step3">
+      <p style="text-align:center;font-size:14px;color:var(--muted);margin-bottom:6px;">6-digit code sent to</p>
+      <p style="text-align:center;font-weight:600;font-size:15px;color:var(--text);margin-bottom:20px;" id="otpEmail">—</p>
+      <div style="text-align:center;background:#e8f0ff;border:1px solid #b0c4ff;border-radius:8px;padding:10px;font-size:13px;color:#1a3a8a;margin-bottom:16px;">
+        📧 A 6-digit OTP has been sent to your email address
+      </div>
+      <div class="otp-grid">
+        <input type="text" maxlength="1" id="otp0" oninput="otpIn(0)" onkeydown="otpKey(event,0)"/>
+        <input type="text" maxlength="1" id="otp1" oninput="otpIn(1)" onkeydown="otpKey(event,1)"/>
+        <input type="text" maxlength="1" id="otp2" oninput="otpIn(2)" onkeydown="otpKey(event,2)"/>
+        <input type="text" maxlength="1" id="otp3" oninput="otpIn(3)" onkeydown="otpKey(event,3)"/>
+        <input type="text" maxlength="1" id="otp4" oninput="otpIn(4)" onkeydown="otpKey(event,4)"/>
+        <input type="text" maxlength="1" id="otp5" oninput="otpIn(5)" onkeydown="otpKey(event,5)"/>
+      </div>
+      <button class="btn-primary" onclick="verifyOTP()">Verify & Complete Registration</button>
+      <button class="btn-secondary" onclick="setStep(2)">← Back</button>
+      <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:12px;">
+        Didn't receive? <a href="#" style="color:var(--gold);font-weight:600;text-decoration:none;" onclick="resendOTP(event)">Resend OTP</a>
+        <span id="otpCountdown"></span>
+      </p>
+    </div>
+
+    <!-- ══════ STEP 4: SUCCESS ══════ -->
+    <div class="step-section" id="step4">
+      <div class="success-wrap">
+        <div class="success-icon">🎉</div>
+        <h2>Account Created!</h2>
+        <p>Welcome to LoanScope, <strong id="successName"></strong>.<br/>Your account has been verified and is ready.</p>
+        <div style="margin:24px 0;padding:18px;background:#f0fff8;border:1px solid #b0f0d0;border-radius:10px;font-size:14px;color:#1a6b3c;">
+          ✅ Email verified &nbsp;·&nbsp; ✅ Profile complete &nbsp;·&nbsp; ✅ Access granted
+        </div>
+        <a href="index.html" style="display:inline-block;background:var(--gold);color:var(--navy);padding:14px 32px;border-radius:9px;text-decoration:none;font-weight:700;font-size:15px;">Go to Dashboard →</a>
+        <div style="margin-top:12px;"><a href="signin.html" style="color:var(--muted);font-size:13px;text-decoration:none;">Or sign in to your account</a></div>
+      </div>
+    </div>
+
+  </div><!-- end right-panel -->
+</div>
+
+<div class="toast" id="toast"></div>
+<footer><p>© 2026 LoanScope Analytics · Secured with 256-bit SSL · RBI Compliant</p></footer>
+
+<script>
+// ══════════════════════════════════════════════════════
+// GOOGLE CLIENT ID — your real ID is set here
+// ══════════════════════════════════════════════════════
+const GOOGLE_CLIENT_ID = '385189104800-mr1fvhodrf1n9ri3oso7h24g5sqtgfaj.apps.googleusercontent.com';
+
+let currentStep = 1;
+const EJS_SERVICE  = 'service_feaaasg';
+const EJS_TEMPLATE = 'template_p6ndvfn';
+let liveSignupOTP = '';
+
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendOTPEmail(toEmail, toName, otp) {
+  try {
+    const now = new Date();
+    const expiry = new Date(now.getTime() + 15*60000);
+    const timeStr = expiry.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    await emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
+      email:    toEmail,
+      passcode: otp,
+      time:     timeStr
+    });
+    return true;
+  } catch(err) {
+    console.error('EmailJS error:', err);
+    return false;
+  }
+}
+let otpTimer    = null;
+let googleUser  = null; // stores decoded Google profile
+
+// ── TOAST ──────────────────────────────────────────────
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// ── GOOGLE OAUTH CALLBACK ──────────────────────────────
+// Called automatically by Google SDK when user picks an account
+function handleGoogleResponse(response) {
+  try {
+    // Decode the JWT Google returns (standard base64url decode)
+    const parts   = response.credential.split('.');
+    const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+
+    googleUser = payload; // save for later use
+
+    // Auto-fill form fields
+    const nameParts = (payload.name || '').split(' ');
+    document.getElementById('firstName').value = payload.given_name  || nameParts[0] || '';
+    document.getElementById('lastName').value  = payload.family_name || nameParts.slice(1).join(' ') || '';
+    document.getElementById('email').value     = payload.email || '';
+
+    // Run validators so green ticks appear
+    validateName('firstName', 'fNameMsg');
+    validateName('lastName',  'lNameMsg');
+    validateEmail();
+
+    // Show Google profile card
+    const card = document.getElementById('googleProfileCard');
+    card.classList.add('show');
+    document.getElementById('gpcName').textContent    = payload.name  || 'Google User';
+    document.getElementById('gpcEmail').textContent   = payload.email || '';
+    document.getElementById('gpcInitials').textContent = (payload.given_name || 'G')[0].toUpperCase();
+
+    // If Google gives a profile picture, use it
+    if (payload.picture) {
+      const img = document.createElement('img');
+      img.src = payload.picture;
+      img.className = 'gpc-avatar';
+      img.onerror = () => {}; // keep initials on fail
+      document.getElementById('gpcInitials').replaceWith(img);
+    }
+
+    showToast('✅ Google account connected! Fields auto-filled — review and continue.', 'success');
+
+    // Save Google user to Firestore immediately
+    if (typeof window.saveUserToFirestore === 'function') {
+      window.saveUserToFirestore({
+        firstName:    payload.given_name  || '',
+        lastName:     payload.family_name || '',
+        email:        payload.email       || '',
+        mobile:       '',
+        dob:          '',
+        org:          document.getElementById('org').value.trim() || '',
+        role:         document.getElementById('role').value || '',
+        signupMethod: 'google'
+      });
+    }
+
+  } catch (err) {
+    console.error('Google JWT parse error:', err);
+    showToast('Google sign-in failed. Please fill the form manually.', 'error');
+  }
+}
+
+// Manual fallback trigger (opens Google OAuth popup via redirect)
+function triggerGoogleSignup() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    showToast('Google SDK not loaded yet. Please wait and try again.', 'warning'); return;
+  }
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCallback,
+    ux_mode: 'popup'
+  });
+  google.accounts.id.prompt();
+}
+function manualGoogleSignIn() {
+  const redirectURI = encodeURIComponent(window.location.href.split('?')[0].split('#')[0]);
+  const scope       = encodeURIComponent('openid email profile');
+  const state       = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('g_state', state);
+
+  window.location.href =
+    'https://accounts.google.com/o/oauth2/v2/auth' +
+    '?client_id='    + GOOGLE_CLIENT_ID +
+    '&redirect_uri=' + redirectURI +
+    '&response_type=token' +
+    '&scope='        + scope +
+    '&state='        + state;
+}
+
+// Handle redirect-back callback (access_token in URL hash)
+function handleRedirectCallback() {
+  const hash   = window.location.hash.slice(1);
+  if (!hash) return;
+  const params = new URLSearchParams(hash);
+  const token  = params.get('access_token');
+  const state  = params.get('state');
+  if (!token) return;
+  if (state !== sessionStorage.getItem('g_state')) {
+    showToast('Security error: OAuth state mismatch.', 'error'); return;
+  }
+  history.replaceState(null, '', window.location.pathname); // clean URL
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + token }
+  })
+  .then(r => r.json())
+  .then(data => {
+    googleUser = data;
+    document.getElementById('firstName').value = data.given_name  || '';
+    document.getElementById('lastName').value  = data.family_name || '';
+    document.getElementById('email').value     = data.email       || '';
+    validateName('firstName','fNameMsg');
+    validateName('lastName','lNameMsg');
+    validateEmail();
+    document.getElementById('googleProfileCard').classList.add('show');
+    document.getElementById('gpcName').textContent  = data.name  || '';
+    document.getElementById('gpcEmail').textContent = data.email || '';
+    document.getElementById('gpcInitials').textContent = (data.given_name||'G')[0];
+    showToast('✅ Google account connected!', 'success');
+  })
+  .catch(() => showToast('Could not fetch Google profile. Fill form manually.', 'error'));
+}
+
+function linkedInSignIn() {
+  showToast('LinkedIn OAuth requires a backend server. Use Google Sign-In instead.', 'info');
+}
+
+// ── VALIDATION ─────────────────────────────────────────
+function setMsg(id, msg, type) {
+  const e = document.getElementById(id);
+  e.textContent = msg;
+  e.className = 'field-msg show ' + type;
+}
+function clearMsg(id) { document.getElementById(id).className = 'field-msg'; }
+function setValid(id)   { const e=document.getElementById(id); e.classList.remove('invalid'); e.classList.add('valid'); }
+function setInvalid(id) { const e=document.getElementById(id); e.classList.remove('valid');   e.classList.add('invalid'); }
+
+function validateName(id, msgId) {
+  const v = document.getElementById(id).value.trim();
+  if (!v) { clearMsg(msgId); return false; }
+  if (v.length < 2) { setMsg(msgId,'Minimum 2 characters','err'); setInvalid(id); return false; }
+  if (!/^[a-zA-Z\s'\-]+$/.test(v)) { setMsg(msgId,'Letters only','err'); setInvalid(id); return false; }
+  setMsg(msgId,'✓ Looks good','ok'); setValid(id); return true;
+}
+function validateEmail() {
+  const v = document.getElementById('email').value.trim();
+  if (!v) { clearMsg('emailMsg'); return false; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setMsg('emailMsg','Invalid email address','err'); setInvalid('email'); return false; }
+  setMsg('emailMsg','✓ Valid email','ok'); setValid('email'); return true;
+}
+function validateMobile() {
+  const v = document.getElementById('mobile').value.replace(/\s+/g,'').replace(/^\+91/,'').replace(/-/g,'');
+  if (!v) { clearMsg('mobileMsg'); return false; }
+  if (!/^\d{10}$/.test(v) || /^[012345]/.test(v)) { setMsg('mobileMsg','Enter valid 10-digit mobile','err'); setInvalid('mobile'); return false; }
+  setMsg('mobileMsg','✓ Valid mobile','ok'); setValid('mobile'); return true;
+}
+function validateDOB() {
+  const v = document.getElementById('dob').value;
+  if (!v) { clearMsg('dobMsg'); return false; }
+  const age = Math.floor((Date.now() - new Date(v)) / 31557600000);
+  if (age < 18) { setMsg('dobMsg','Must be at least 18 years old','err'); return false; }
+  if (age > 75) { setMsg('dobMsg','Please verify date of birth','err'); return false; }
+  setMsg('dobMsg','✓ Age: ' + age + ' years','ok'); return true;
+}
+function validateOrg() {
+  const v = document.getElementById('org').value.trim();
+  if (!v) { clearMsg('orgMsg'); return false; }
+  if (v.length < 3) { setMsg('orgMsg','Enter full organisation name','err'); return false; }
+  setMsg('orgMsg','✓ Registered','ok'); return true;
+}
+
+// ── PASSWORD STRENGTH ──────────────────────────────────
+function checkPassword() {
+  const p  = document.getElementById('password').value;
+  const fn = document.getElementById('firstName').value.toLowerCase();
+  const ln = document.getElementById('lastName').value.toLowerCase();
+  const rules = {
+    len:     p.length >= 8,
+    upper:   /[A-Z]/.test(p),
+    lower:   /[a-z]/.test(p),
+    num:     /[0-9]/.test(p),
+    special: /[!@#$%^&*()\-_=+\[\]{};:'",.<>?\/\\|`~]/.test(p),
+    noname:  p.length > 0 && !(fn.length > 1 && p.toLowerCase().includes(fn)) && !(ln.length > 1 && p.toLowerCase().includes(ln))
+  };
+  ['len','upper','lower','num','special','noname'].forEach(k => {
+    const el = document.getElementById('r-' + k);
+    el.className = 'rule' + (rules[k] ? ' pass' : (p.length > 0 ? ' fail' : ''));
+  });
+  const score = Object.values(rules).filter(Boolean).length;
+  const colors = ['#ddd','#ff7c7c','#ff7c7c','#f5c842','#5de8a0','#5de8a0','#5de8a0'];
+  const labels = ['Enter a password','Very Weak','Weak','Fair','Strong','Very Strong','Excellent'];
+  const lcolors= ['var(--muted)','#cc3333','#cc3333','#8a5700','#1a6b3c','#1a6b3c','#1a6b3c'];
+  for (let i=1; i<=4; i++)
+    document.getElementById('sb'+i).style.background = (i <= Math.ceil(score*4/6) && score>0) ? colors[score] : '#ddd';
+  const lbl = document.getElementById('strengthLabel');
+  lbl.textContent = p.length===0 ? 'Enter a password' : labels[score];
+  lbl.style.color = lcolors[score];
+  checkConfirm();
+  return score >= 4 && rules.len;
+}
+function checkConfirm() {
+  const p = document.getElementById('password').value;
+  const c = document.getElementById('confirmPass').value;
+  if (!c) { clearMsg('confirmMsg'); return false; }
+  if (p !== c) { setMsg('confirmMsg','Passwords do not match','err'); setInvalid('confirmPass'); return false; }
+  setMsg('confirmMsg','✓ Passwords match','ok'); setValid('confirmPass'); return true;
+}
+function togglePass(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  btn.textContent = inp.type==='password' ? '👁' : '🙈';
+}
+
+// ── OTP ────────────────────────────────────────────────
+function otpIn(i) {
+  const v = document.getElementById('otp'+i).value.replace(/\D/g,'');
+  document.getElementById('otp'+i).value = v;
+  if (v && i<5) document.getElementById('otp'+(i+1)).focus();
+  document.getElementById('otp'+i).classList.toggle('filled', !!v);
+}
+function otpKey(e,i) {
+  if (e.key==='Backspace' && !document.getElementById('otp'+i).value && i>0)
+    document.getElementById('otp'+(i-1)).focus();
+}
+function getOTP() { return [0,1,2,3,4,5].map(i=>document.getElementById('otp'+i).value).join(''); }
+async function resendOTP(e) {
+  e.preventDefault();
+  const email = document.getElementById('email').value;
+  const name  = document.getElementById('firstName').value;
+  liveSignupOTP = generateOTP();
+  showToast('Resending OTP to ' + email + '…', 'info');
+  const sent = await sendOTPEmail(email, name, liveSignupOTP);
+  if (sent) showToast('New OTP sent to ' + email + '!', 'success');
+  else showToast('Failed to resend OTP. Please try again.', 'error');
+  let t=30;
+  const el = document.getElementById('otpCountdown');
+  clearInterval(otpTimer);
+  otpTimer = setInterval(()=>{
+    el.textContent='('+t+'s)'; t--;
+    if(t<0){clearInterval(otpTimer);el.textContent='';}
+  },1000);
+}
+
+// ── STEP NAVIGATION ───────────────────────────────────
+function goStep2() {
+  let ok = true;
+  if (!validateName('firstName','fNameMsg')) ok=false;
+  if (!validateName('lastName','lNameMsg'))  ok=false;
+  if (!validateEmail())                      ok=false;
+  if (!validateMobile())                     ok=false;
+  if (!validateDOB())                        ok=false;
+  validateOrg();
+  if (document.getElementById('org').value.trim().length < 3) ok=false;
+  if (!document.getElementById('role').value) {
+    setMsg('roleMsg','Please select your role','err'); ok=false;
+  } else { clearMsg('roleMsg'); }
+  if (!ok) { showToast('Please fix the errors above before continuing.','error'); return; }
+  setStep(2);
+}
+async function goStep3() {
+  if (!checkPassword())  { showToast('Password does not meet all requirements.','error'); return; }
+  if (!checkConfirm())   { showToast('Passwords do not match.','error'); return; }
+  if (!document.getElementById('secQ').value) { showToast('Please choose a security question.','error'); return; }
+  if (document.getElementById('secA').value.trim().length < 2) { showToast('Please provide a security answer.','error'); return; }
+  if (!document.getElementById('terms').checked) { showToast('You must accept the Terms of Service.','error'); return; }
+  const email = document.getElementById('email').value;
+  const name  = document.getElementById('firstName').value;
+  document.getElementById('otpEmail').textContent = email;
+  liveSignupOTP = generateOTP();
+  showToast('Sending OTP to ' + email + '…', 'info');
+  const sent = await sendOTPEmail(email, name, liveSignupOTP);
+  if (sent) {
+    setStep(3);
+    showToast('OTP sent to ' + email + '! Check your inbox.', 'success');
+  } else {
+    showToast('Failed to send OTP. Please check your email and try again.', 'error');
+    return;
+  }
+  let t=30;
+  const el=document.getElementById('otpCountdown');
+  otpTimer=setInterval(()=>{el.textContent='('+t+'s)';t--;if(t<0){clearInterval(otpTimer);el.textContent='';}},1000);
+}
+function verifyOTP() {
+  const entered = getOTP();
+  if (entered.length<6) { showToast('Enter the complete 6-digit OTP.','error'); return; }
+  if (!liveSignupOTP) { showToast('No OTP found. Please go back and try again.','error'); return; }
+  if (entered !== liveSignupOTP) { showToast('Incorrect OTP. Please try again.','error'); [0,1,2,3,4,5].forEach(i=>{document.getElementById('otp'+i).value='';document.getElementById('otp'+i).classList.remove('filled');}); document.getElementById('otp0').focus(); return; }
+  clearInterval(otpTimer);
+  const _fn  = document.getElementById('firstName').value;
+  const _ln  = document.getElementById('lastName').value;
+  const _em  = document.getElementById('email').value.trim();
+  const _pw  = document.getElementById('password').value;
+  const _mob = document.getElementById('mobile').value.trim();
+  const _dob = document.getElementById('dob').value;
+  const _org = document.getElementById('org').value.trim();
+  const _rol = document.getElementById('role').value;
+
+  // 1. Save credentials to localStorage for login
+  if (_em) {
+    const users = JSON.parse(localStorage.getItem('ls_users') || '{}');
+    users[_em.toLowerCase()] = { pass: _pw, name: _fn + ' ' + _ln };
+    localStorage.setItem('ls_users', JSON.stringify(users));
+  }
+
+  // 2. Save full profile to Firebase Firestore
+  if (typeof window.saveUserToFirestore === 'function') {
+    window.saveUserToFirestore({
+      firstName: _fn,
+      lastName:  _ln,
+      email:     _em,
+      mobile:    _mob,
+      dob:       _dob,
+      org:       _org,
+      role:      _rol,
+      signupMethod: 'email'
+    });
+  }
+
+  // 3. Set session and redirect
+  document.getElementById('successName').textContent = _fn + ' ' + _ln;
+  sessionStorage.setItem('ls_user', JSON.stringify({ email: _em, name: _fn + ' ' + _ln, loginTime: Date.now() }));
+  setStep(4);
+  showToast('🎉 Account verified! Welcome to LoanScope.','success');
+  setTimeout(() => { location.href = 'index.html'; }, 2500);
+}
+
+function setStep(n) {
+  currentStep = n;
+  document.querySelectorAll('.step-section').forEach((s,i) => s.classList.toggle('active', i===n-1));
+  [1,2,3].forEach(i => {
+    document.getElementById('bar'+i).className = 'step' + (i<n?' done':i===n?' active':'');
+    document.getElementById('lbl'+i).className = 'step-label' + (i<n?' done':i===n?' active':'');
+  });
+  if (n===4) {
+    document.getElementById('stepBar').style.display='none';
+    document.getElementById('stepLabels').style.display='none';
+  }
+}
+
+// ── ON PAGE LOAD ───────────────────────────────────────
+window.addEventListener('load', function() {
+  handleRedirectCallback(); // handle Google OAuth redirect
+
+  // Show fallback button if Google SDK didn't render within 3 seconds
+  setTimeout(() => {
+    const rendered = document.querySelector('.g_id_signin iframe');
+    if (!rendered) document.getElementById('gFallback').style.display='flex';
+  }, 3000);
+});
+</script>
+</body>
+</html>

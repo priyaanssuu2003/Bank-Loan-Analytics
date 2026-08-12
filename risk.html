@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Risk Assessment — LoanScope</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy:#0a1628;--navy2:#112240;--gold:#c9a84c;--gold-light:#f0d080;
+    --cream:#f8f4ec;--text:#1a2340;--muted:#6b7a99;
+    --white:#ffffff;--border:rgba(201,168,76,0.25);--shadow:0 8px 40px rgba(10,22,40,0.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);}
+  nav{background:var(--navy);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);}
+  .logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold);letter-spacing:1px;text-decoration:none;}
+  .logo span{color:var(--white);}
+  nav ul{list-style:none;display:flex;gap:8px;}
+  nav ul li a{color:rgba(255,255,255,0.75);font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;transition:all 0.2s;font-weight:500;}
+  nav ul li a:hover,nav ul li a.active{color:var(--gold);background:rgba(201,168,76,0.1);}
+
+  .page-header{background:var(--navy2);padding:48px;border-bottom:1px solid var(--border);}
+  .page-header-inner{max-width:1100px;margin:0 auto;}
+  .breadcrumb{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:12px;}
+  .breadcrumb a{color:var(--gold);text-decoration:none;}
+  .page-header h1{font-family:'Playfair Display',serif;font-size:38px;color:var(--white);margin-bottom:8px;}
+  .page-header p{color:rgba(255,255,255,0.55);font-size:16px;}
+
+  .main{max-width:1100px;margin:48px auto;padding:0 48px;}
+  .card{background:#fff;border:1px solid rgba(201,168,76,0.15);border-radius:14px;padding:36px;box-shadow:var(--shadow);}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .form-group label{display:block;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;}
+  .form-group input,.form-group select{width:100%;padding:12px 16px;font-size:15px;font-family:'DM Sans',sans-serif;border:1.5px solid #ddd;border-radius:8px;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;outline:none;color:var(--text);}
+  .form-group input:focus,.form-group select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.1);}
+  .section-label{font-family:'Playfair Display',serif;font-size:18px;margin:32px 0 18px;padding-bottom:10px;border-bottom:2px solid rgba(201,168,76,0.2);}
+  .btn-assess{background:var(--gold);color:var(--navy);border:none;padding:15px 36px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-top:28px;}
+  .btn-assess:hover{background:var(--gold-light);}
+
+  /* ── LIVE CIBIL ESTIMATOR PANEL ── */
+  .cibil-panel{
+    background:var(--navy);border-radius:16px;padding:28px 32px;
+    position:sticky;top:88px;border:1px solid rgba(201,168,76,0.2);
+  }
+  .cibil-panel-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:20px;}
+
+  /* Score ring */
+  .score-ring-wrap{text-align:center;margin-bottom:20px;position:relative;}
+  .score-ring-svg{display:block;margin:0 auto;}
+  .score-center-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+  .score-number{font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:var(--white);line-height:1;transition:color 0.5s;}
+  .score-of{font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;}
+  .score-grade-pill{display:inline-block;padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:10px;transition:all 0.4s;}
+
+  /* Factor bars */
+  .factor-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+  .fl-item{}
+  .fl-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;}
+  .fl-label{color:rgba(255,255,255,0.55);font-weight:500;}
+  .fl-val{color:var(--white);font-weight:700;}
+  .fl-track{background:rgba(255,255,255,0.1);border-radius:4px;height:6px;overflow:hidden;}
+  .fl-fill{height:100%;border-radius:4px;transition:width 0.6s ease,background 0.4s;}
+
+  /* Score breakdown */
+  .score-breakdown{background:rgba(255,255,255,0.05);border-radius:10px;padding:14px 16px;margin-bottom:16px;}
+  .sb-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .sb-row:last-child{border-bottom:none;}
+  .sb-name{color:rgba(255,255,255,0.5);}
+  .sb-pts{font-weight:700;color:var(--white);}
+
+  /* Live indicator */
+  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#5de8a0;margin-right:6px;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .live-label{font-size:11px;color:#5de8a0;font-weight:600;}
+
+  /* Disclaimer */
+  .cibil-note{font-size:11px;color:rgba(255,255,255,0.3);line-height:1.5;margin-top:8px;}
+
+  /* Layout: form + sticky panel */
+  .risk-layout{display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start;}
+
+  /* Results section */
+  .score-layout{display:grid;grid-template-columns:300px 1fr;gap:32px;margin-top:40px;align-items:start;}
+  .score-circle-wrap{text-align:center;}
+  .score-dial{position:relative;width:220px;height:220px;margin:0 auto 16px;}
+  .score-dial canvas{position:absolute;top:0;left:0;}
+  .score-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+  .score-num{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;}
+  .score-max{font-size:13px;color:var(--muted);}
+  .score-grade{display:inline-block;padding:6px 18px;border-radius:20px;font-size:14px;font-weight:700;margin-top:12px;}
+  .grade-A{background:#d4f7e7;color:#1a6b3c;}
+  .grade-B{background:#fff3cd;color:#8a5700;}
+  .grade-C{background:#fde8e8;color:#8a1a1a;}
+  .factors-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .factor-card{background:#f8f4ec;border-radius:10px;padding:18px;}
+  .factor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .factor-name{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);}
+  .factor-score{font-size:20px;font-weight:700;}
+  .factor-bar{background:#e0ddd5;border-radius:4px;height:6px;overflow:hidden;}
+  .factor-fill{height:100%;border-radius:4px;}
+  .f-green{background:#5de8a0;} .f-amber{background:#f5c842;} .f-red{background:#ff7c7c;}
+  .grade-table{width:100%;border-collapse:collapse;font-size:14px;}
+  .grade-table th{background:var(--navy);color:var(--gold);padding:12px 16px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;}
+  .grade-table td{padding:12px 16px;border-bottom:1px solid #f0ece3;}
+  .grade-table tr:last-child td{border-bottom:none;}
+  .badge{padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;}
+  .badge-A{background:#d4f7e7;color:#1a6b3c;} .badge-B{background:#fff3cd;color:#8a5700;}
+  .badge-C{background:#fde8e8;color:#8a1a1a;} .badge-D{background:#f5e6e6;color:#5a1010;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:32px;}
+  .recommendation-list{list-style:none;}
+  .recommendation-list li{padding:12px 0;border-bottom:1px solid #f0ece3;display:flex;gap:12px;font-size:14px;}
+  .recommendation-list li::before{content:'✓';color:#5de8a0;font-weight:700;flex-shrink:0;}
+  .alert{padding:16px 20px;border-radius:10px;font-size:14px;margin-top:16px;}
+  .alert-warning{background:#fff8e0;border-left:4px solid #f5c842;color:#7a5c00;}
+  .alert-danger{background:#fff0f0;border-left:4px solid #ff7c7c;color:#7a0000;}
+  .alert-success{background:#e8faf3;border-left:4px solid #5de8a0;color:#0a5c35;}
+
+  footer{background:var(--navy);border-top:1px solid var(--border);padding:40px 48px;margin-top:60px;}
+  .footer-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
+  .footer-links{display:flex;gap:24px;}
+  .footer-links a{color:rgba(255,255,255,0.5);font-size:13px;text-decoration:none;}
+  .footer-links a:hover{color:var(--gold);}
+  .footer-copy{color:rgba(255,255,255,0.35);font-size:13px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">Loan<span>Scope</span></a>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="calculator.html">Calculator</a></li>
+    <li><a href="risk.html" class="active">Risk Analysis</a></li>
+    <li><a href="portfolio.html">Portfolio</a></li>
+    <li><a href="reports.html">Reports</a></li>
+    <li id="navAuthArea" style="display:flex;align-items:center;gap:8px;"></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="breadcrumb"><a href="index.html">Home</a> › Risk Analysis</div>
+    <h1>Credit Risk Assessment</h1>
+    <p>CIBIL score estimated live as you fill the form — no manual entry needed</p>
+  </div>
+</div>
+
+<div class="main">
+  <div class="risk-layout">
+
+    <!-- LEFT: INPUT FORM -->
+    <div class="card" id="scoring">
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin-bottom:24px;">Borrower Information</h2>
+
+      <div class="section-label">Personal Details</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="fname" value="Rajesh Kumar Sharma" placeholder="Full name" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="age" value="38" min="21" max="65" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Employment Type</label>
+          <select id="empType" onchange="estimateCIBIL()">
+            <option value="salaried">Salaried — Private</option>
+            <option value="govt">Salaried — Government</option>
+            <option value="self">Self-Employed</option>
+            <option value="business">Business Owner</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Years in Current Job</label>
+          <input type="number" id="jobYears" value="6" min="0" oninput="estimateCIBIL()"/>
+        </div>
+      </div>
+
+      <div class="section-label">Financial Details</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Monthly Income (₹)</label>
+          <input type="number" id="income" value="85000" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Existing Monthly Obligations (₹)</label>
+          <input type="number" id="obligations" value="12000" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Loan Amount Requested (₹)</label>
+          <input type="number" id="loanAmt" value="2500000" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Loan Purpose</label>
+          <select id="purpose" onchange="estimateCIBIL()">
+            <option value="home">Home Purchase</option>
+            <option value="business">Business Expansion</option>
+            <option value="personal">Personal / Wedding</option>
+            <option value="education">Education</option>
+            <option value="auto">Vehicle Purchase</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Collateral / Property Value (₹)</label>
+          <input type="number" id="collateral" value="4000000" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Savings / Bank Balance (₹)</label>
+          <input type="number" id="savings" value="150000" oninput="estimateCIBIL()"/>
+        </div>
+      </div>
+
+      <div class="section-label">Credit History</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Number of Existing Loans</label>
+          <input type="number" id="existLoans" value="1" min="0" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Defaults in Last 5 Years</label>
+          <input type="number" id="defaults" value="0" min="0" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Bounced Cheques (Last 12 Months)</label>
+          <input type="number" id="bounced" value="0" min="0" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Credit Card Utilisation (%)</label>
+          <input type="number" id="ccUtil" value="28" min="0" max="100" oninput="estimateCIBIL()"/>
+        </div>
+        <div class="form-group">
+          <label>Loan Repayment History</label>
+          <select id="repayHistory" onchange="estimateCIBIL()">
+            <option value="excellent">Excellent — Always on time</option>
+            <option value="good">Good — 1-2 late payments</option>
+            <option value="average">Average — Occasional delays</option>
+            <option value="poor">Poor — Frequent delays</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Oldest Credit Account (Years)</label>
+          <input type="number" id="creditAge" value="5" min="0" oninput="estimateCIBIL()"/>
+        </div>
+      </div>
+
+      <button class="btn-assess" onclick="assess()">🛡️ Run Full Risk Assessment</button>
+    </div>
+
+    <!-- RIGHT: LIVE CIBIL ESTIMATOR PANEL -->
+    <div class="cibil-panel">
+      <div class="cibil-panel-title">
+        <span class="live-dot"></span>
+        <span class="live-label">Live CIBIL Estimator</span>
+      </div>
+
+      <!-- Score Ring -->
+      <div class="score-ring-wrap">
+        <svg class="score-ring-svg" id="scoreRingSVG" width="180" height="180" viewBox="0 0 180 180">
+          <!-- Background track -->
+          <circle cx="90" cy="90" r="72"
+            fill="none" stroke="rgba(255,255,255,0.08)"
+            stroke-width="14" stroke-linecap="round"
+            stroke-dasharray="452.4" stroke-dashoffset="0"
+            transform="rotate(135 90 90)"/>
+          <!-- Score fill arc (3/4 circle = 270deg = 339.3 dasharray out of 452.4) -->
+          <circle cx="90" cy="90" r="72"
+            fill="none" id="scoreArc"
+            stroke="#5de8a0" stroke-width="14" stroke-linecap="round"
+            stroke-dasharray="452.4" stroke-dashoffset="452.4"
+            transform="rotate(135 90 90)"
+            style="transition:stroke-dashoffset 0.8s ease, stroke 0.5s ease;"/>
+        </svg>
+        <div class="score-center-text">
+          <div class="score-number" id="liveCibilNum">—</div>
+          <div class="score-of">out of 900</div>
+        </div>
+        <div style="text-align:center;margin-top:8px;">
+          <span class="score-grade-pill" id="liveCibilGrade" style="background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);">
+            Fill form to estimate
+          </span>
+        </div>
+      </div>
+
+      <!-- Factor Breakdown Bars -->
+      <div class="factor-list" id="factorBars">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Score Component Breakdown -->
+      <div class="score-breakdown" id="scoreBreakdown">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Disclaimer -->
+      <p class="cibil-note">
+        ⚡ Estimated using bureau-aligned weightings: payment history (35%), credit utilisation (30%), credit age (15%), credit mix (10%), new credit (10%). Not an official CIBIL score — for assessment purposes only.
+      </p>
+    </div>
+
+  </div><!-- end risk-layout -->
+
+  <!-- FULL RISK RESULTS (shown after clicking Assess) -->
+  <div id="resultSection" style="display:none;margin-top:32px;">
+    <div class="card">
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin-bottom:8px;">Full Assessment Result</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:28px;">Generated for: <strong id="resName"></strong></p>
+      <div class="score-layout">
+        <div class="score-circle-wrap">
+          <div class="score-dial">
+            <canvas id="dialCanvas" width="220" height="220"></canvas>
+            <div class="score-center">
+              <div class="score-num" id="scoreNum">724</div>
+              <div class="score-max">out of 900</div>
+            </div>
+          </div>
+          <span class="score-grade" id="scoreGrade">Grade A — Low Risk</span>
+          <div style="margin-top:16px;font-size:13px;color:var(--muted);" id="scoreVerdict"></div>
+        </div>
+        <div class="factors-grid" id="factorsGrid"></div>
+      </div>
+      <div class="two-col">
+        <div>
+          <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:16px;">Key Ratios</h3>
+          <table class="grade-table" style="border-radius:10px;overflow:hidden;">
+            <thead><tr><th>Metric</th><th>Value</th><th>Benchmark</th><th>Status</th></tr></thead>
+            <tbody id="ratioBody"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:16px;">Recommendations</h3>
+          <ul class="recommendation-list" id="recoList"></ul>
+          <div id="riskAlert" class="alert" style="display:none;"></div>
+        </div>
+      </div>
+      <div style="margin-top:28px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+        <a href="calculator.html" style="background:var(--gold);color:var(--navy);padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Compute EMI →</a>
+        <button onclick="addToPortfolio()" id="addPortfolioBtn" style="background:#e8faf3;color:#1a6b3c;border:1.5px solid #5de8a0;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">➕ Add to Portfolio</button>
+        <a href="reports.html" style="border:1.5px solid rgba(201,168,76,0.4);color:var(--gold);padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:500;font-size:14px;">Generate Report →</a>
+        <div id="addedMsg" style="display:none;background:#d4f7e7;color:#1a6b3c;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;">
+          ✅ Added! <a href="portfolio.html" style="color:#1a6b3c;font-weight:700;margin-left:6px;">View in Portfolio →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRADE REFERENCE -->
+    <div class="card" style="margin-top:24px;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;">Risk Grade Reference</h3>
+      <table class="grade-table" style="border-radius:10px;overflow:hidden;">
+        <thead><tr><th>Grade</th><th>Score Range</th><th>Risk Level</th><th>Max LTV</th><th>Interest Loading</th><th>Decision</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-A">A+</span></td><td>850–900</td><td>Very Low</td><td>90%</td><td>None</td><td style="color:#5de8a0;font-weight:600">Auto-Approve</td></tr>
+          <tr><td><span class="badge badge-A">A</span></td><td>750–849</td><td>Low</td><td>85%</td><td>+0.25%</td><td style="color:#5de8a0;font-weight:600">Approve</td></tr>
+          <tr><td><span class="badge badge-B">B</span></td><td>650–749</td><td>Moderate</td><td>75%</td><td>+0.75%</td><td style="color:#f5c842;font-weight:600">Manual Review</td></tr>
+          <tr><td><span class="badge badge-C">C</span></td><td>550–649</td><td>High</td><td>60%</td><td>+2.0%</td><td style="color:#ff7c7c;font-weight:600">Conditional</td></tr>
+          <tr><td><span class="badge badge-D">D</span></td><td>&lt;550</td><td>Very High</td><td>N/A</td><td>N/A</td><td style="color:#cc0000;font-weight:600">Decline</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <a class="logo" href="index.html" style="font-size:18px;">Loan<span>Scope</span></a>
+    <div class="footer-links">
+      <a href="index.html">Home</a><a href="calculator.html">Calculator</a>
+      <a href="risk.html">Risk</a><a href="portfolio.html">Portfolio</a><a href="reports.html">Reports</a>
+    </div>
+    <div class="footer-copy">© 2026 LoanScope Analytics</div>
+  </div>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// LIVE CIBIL SCORE ESTIMATOR
+// Uses bureau-aligned 5-factor weighting model (300–900 scale)
+// ══════════════════════════════════════════════════════════════════
+
+// Factor weights (mirror real bureau weightings)
+const WEIGHTS = {
+  paymentHistory:   0.35,   // 35% — most important
+  creditUtilisation:0.30,   // 30%
+  creditAge:        0.15,   // 15%
+  creditMix:        0.10,   // 10%
+  newCredit:        0.10    // 10%
+};
+
+const SCORE_MIN = 300;
+const SCORE_MAX = 900;
+const SCORE_RANGE = SCORE_MAX - SCORE_MIN; // 600
+
+function getVal(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function getSel(id) { return document.getElementById(id)?.value || ''; }
+
+function estimateCIBIL() {
+  // ── 1. PAYMENT HISTORY (35%) ─────────────────────────────────
+  // Based on: defaults, bounced cheques, repayment history
+  let defaults   = getVal('defaults');
+  let bounced    = getVal('bounced');
+  let repayHist  = getSel('repayHistory');
+
+  let repayBase  = repayHist === 'excellent' ? 1.0
+                 : repayHist === 'good'      ? 0.78
+                 : repayHist === 'average'   ? 0.55
+                 : 0.30; // poor
+
+  let defaultPenalty = Math.min(defaults * 0.15, 0.45);
+  let bouncePenalty  = Math.min(bounced * 0.05, 0.20);
+  let payHistScore   = Math.max(0, repayBase - defaultPenalty - bouncePenalty);
+
+  // ── 2. CREDIT UTILISATION (30%) ──────────────────────────────
+  // Based on: cc utilisation % + obligations vs income
+  let ccUtil     = getVal('ccUtil');
+  let income     = getVal('income') || 1;
+  let obligations= getVal('obligations');
+  let foir       = obligations / income;
+
+  // CC utilisation score (lower = better)
+  let ccScore = ccUtil <= 10  ? 1.0
+              : ccUtil <= 30  ? 0.85
+              : ccUtil <= 50  ? 0.65
+              : ccUtil <= 75  ? 0.40
+              : 0.20;
+
+  // FOIR score
+  let foirScore = foir <= 0.2  ? 1.0
+                : foir <= 0.35 ? 0.85
+                : foir <= 0.5  ? 0.65
+                : foir <= 0.65 ? 0.40
+                : 0.20;
+
+  let utilisationScore = (ccScore * 0.6) + (foirScore * 0.4);
+
+  // ── 3. CREDIT AGE (15%) ──────────────────────────────────────
+  // Based on: oldest credit account + job stability
+  let creditAge  = getVal('creditAge');
+  let jobYears   = getVal('jobYears');
+
+  let ageScore   = creditAge >= 10 ? 1.0
+                 : creditAge >= 7  ? 0.85
+                 : creditAge >= 5  ? 0.70
+                 : creditAge >= 3  ? 0.55
+                 : creditAge >= 1  ? 0.40
+                 : 0.25;
+
+  let jobScore   = jobYears >= 10 ? 1.0
+                 : jobYears >= 5  ? 0.85
+                 : jobYears >= 3  ? 0.70
+                 : jobYears >= 1  ? 0.55
+                 : 0.30;
+
+  let empType    = getSel('empType');
+  let empBonus   = empType === 'govt'     ? 0.10
+                 : empType === 'salaried' ? 0.05
+                 : empType === 'business' ? 0.02
+                 : 0;
+
+  let creditAgeScore = Math.min(1, (ageScore * 0.6) + (jobScore * 0.4) + empBonus);
+
+  // ── 4. CREDIT MIX (10%) ──────────────────────────────────────
+  // Based on: existing loans, savings vs income, collateral vs loan
+  let existLoans = getVal('existLoans');
+  let savings    = getVal('savings');
+  let loanAmt    = getVal('loanAmt') || 1;
+  let collateral = getVal('collateral');
+
+  // Having 1-2 loans is healthy, too many is risky
+  let loanMixScore = existLoans === 0 ? 0.6
+                   : existLoans === 1 ? 1.0
+                   : existLoans === 2 ? 0.85
+                   : existLoans === 3 ? 0.65
+                   : 0.40;
+
+  let ltv        = loanAmt / (collateral || loanAmt);
+  let ltvScore   = ltv <= 0.5  ? 1.0
+                 : ltv <= 0.65 ? 0.85
+                 : ltv <= 0.75 ? 0.70
+                 : ltv <= 0.85 ? 0.50
+                 : 0.25;
+
+  let savingsRatio  = savings / income;
+  let savingsScore  = savingsRatio >= 6  ? 1.0
+                    : savingsRatio >= 3  ? 0.85
+                    : savingsRatio >= 1  ? 0.65
+                    : 0.40;
+
+  let creditMixScore = (loanMixScore * 0.4) + (ltvScore * 0.35) + (savingsScore * 0.25);
+
+  // ── 5. NEW CREDIT (10%) ──────────────────────────────────────
+  // Based on: age (younger = more risky), purpose of loan
+  let age        = getVal('age');
+  let purpose    = getSel('purpose');
+
+  let ageRiskScore = age >= 45 ? 0.90
+                   : age >= 35 ? 0.85
+                   : age >= 28 ? 0.75
+                   : age >= 23 ? 0.60
+                   : 0.45;
+
+  let purposeScore = purpose === 'home'      ? 1.0
+                   : purpose === 'education' ? 0.90
+                   : purpose === 'auto'      ? 0.80
+                   : purpose === 'business'  ? 0.70
+                   : 0.60; // personal
+
+  let newCreditScore = (ageRiskScore * 0.6) + (purposeScore * 0.4);
+
+  // ── COMBINE WEIGHTED SCORE ────────────────────────────────────
+  let weightedRaw =
+      (payHistScore      * WEIGHTS.paymentHistory)   +
+      (utilisationScore  * WEIGHTS.creditUtilisation) +
+      (creditAgeScore    * WEIGHTS.creditAge)         +
+      (creditMixScore    * WEIGHTS.creditMix)         +
+      (newCreditScore    * WEIGHTS.newCredit);
+
+  // Map 0–1 → 300–900
+  let rawScore = Math.round(SCORE_MIN + (weightedRaw * SCORE_RANGE));
+  let finalScore = Math.min(SCORE_MAX, Math.max(SCORE_MIN, rawScore));
+
+  // ── UPDATE UI ─────────────────────────────────────────────────
+  updateCIBILPanel(finalScore, {
+    payHistScore, utilisationScore, creditAgeScore, creditMixScore, newCreditScore
+  });
+
+  return finalScore;
+}
+
+function scoreColor(score) {
+  if (score >= 800) return '#5de8a0';
+  if (score >= 700) return '#c9a84c';
+  if (score >= 600) return '#f5c842';
+  return '#ff7c7c';
+}
+
+function scoreGradeText(score) {
+  if (score >= 850) return 'Excellent';
+  if (score >= 800) return 'Very Good';
+  if (score >= 750) return 'Good';
+  if (score >= 700) return 'Fair';
+  if (score >= 650) return 'Average';
+  if (score >= 600) return 'Below Average';
+  if (score >= 550) return 'Poor';
+  return 'Very Poor';
+}
+
+function scoreGradeColor(score) {
+  if (score >= 750) return { bg: '#d4f7e7', color: '#1a6b3c' };
+  if (score >= 650) return { bg: '#fff3cd', color: '#8a5700' };
+  return { bg: '#fde8e8', color: '#8a1a1a' };
+}
+
+function updateCIBILPanel(score, factors) {
+  // Score number
+  const numEl = document.getElementById('liveCibilNum');
+  animateNumber(numEl, parseInt(numEl.textContent) || score, score, 600);
+
+  // Score color
+  const color = scoreColor(score);
+  numEl.style.color = color;
+
+  // Grade pill
+  const gradeEl = document.getElementById('liveCibilGrade');
+  const gc = scoreGradeColor(score);
+  gradeEl.textContent = scoreGradeText(score);
+  gradeEl.style.background = gc.bg;
+  gradeEl.style.color = gc.color;
+
+  // SVG arc — 3/4 circle (270°), total dasharray for r=72: 2π×72 = 452.39
+  const TOTAL_ARC  = 452.39;
+  const ARC_LENGTH = TOTAL_ARC * 0.75; // 3/4 = 339.3
+  const pct = (score - 300) / 600;
+  const filled = pct * ARC_LENGTH;
+  const offset = TOTAL_ARC - filled;
+  const arc = document.getElementById('scoreArc');
+  arc.style.strokeDashoffset = offset;
+  arc.style.stroke = color;
+
+  // Factor bars
+  const barData = [
+    { label: 'Payment History',    val: factors.payHistScore,      weight: '35%' },
+    { label: 'Credit Utilisation', val: factors.utilisationScore,  weight: '30%' },
+    { label: 'Credit Age',         val: factors.creditAgeScore,    weight: '15%' },
+    { label: 'Credit Mix',         val: factors.creditMixScore,    weight: '10%' },
+    { label: 'New Credit',         val: factors.newCreditScore,    weight: '10%' },
+  ];
+
+  const barsEl = document.getElementById('factorBars');
+  barsEl.innerHTML = barData.map(b => {
+    const pct  = Math.round(b.val * 100);
+    const col  = pct >= 70 ? '#5de8a0' : pct >= 50 ? '#f5c842' : '#ff7c7c';
+    return `
+      <div class="fl-item">
+        <div class="fl-top">
+          <span class="fl-label">${b.label} <span style="color:rgba(255,255,255,0.3)">(${b.weight})</span></span>
+          <span class="fl-val">${pct}%</span>
+        </div>
+        <div class="fl-track">
+          <div class="fl-fill" style="width:${pct}%;background:${col}"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Score breakdown points
+  const breakdown = [
+    { name: 'Payment History',    pts: Math.round(factors.payHistScore      * WEIGHTS.paymentHistory    * 600) },
+    { name: 'Utilisation',        pts: Math.round(factors.utilisationScore  * WEIGHTS.creditUtilisation * 600) },
+    { name: 'Credit Age',         pts: Math.round(factors.creditAgeScore    * WEIGHTS.creditAge         * 600) },
+    { name: 'Credit Mix',         pts: Math.round(factors.creditMixScore    * WEIGHTS.creditMix         * 600) },
+    { name: 'New Credit',         pts: Math.round(factors.newCreditScore    * WEIGHTS.newCredit         * 600) },
+  ];
+
+  document.getElementById('scoreBreakdown').innerHTML =
+    breakdown.map(b => `
+      <div class="sb-row">
+        <span class="sb-name">${b.name}</span>
+        <span class="sb-pts">+${b.pts} pts</span>
+      </div>`).join('');
+}
+
+// Smooth number animation
+function animateNumber(el, from, to, duration) {
+  if (isNaN(from)) from = to;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+    el.textContent = Math.round(from + (to - from) * eased);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FULL RISK ASSESSMENT (uses estimated CIBIL internally)
+// ══════════════════════════════════════════════════════════════════
+let lastAssessedData = null;
+
+function assess() {
+  const cibil      = estimateCIBIL(); // use live estimated score
+  const income     = getVal('income');
+  const obligations= getVal('obligations');
+  const loanAmt    = getVal('loanAmt');
+  const collateral = getVal('collateral');
+  const jobYears   = getVal('jobYears');
+  const defaults_  = getVal('defaults');
+  const bounced    = getVal('bounced');
+  const ccUtil     = getVal('ccUtil');
+  const age        = getVal('age');
+  const existLoans = getVal('existLoans');
+  const name       = document.getElementById('fname').value;
+
+  // Scoring components (out of 900)
+  let cibilScore = Math.min(300, Math.max(0, (cibil - 300) / 600 * 300));
+  let dscr = (income - obligations) / (loanAmt * 0.085 / 12);
+  let dscrScore = Math.min(200, dscr > 2 ? 200 : dscr > 1.5 ? 160 : dscr > 1.2 ? 120 : dscr > 1 ? 80 : 40);
+  let ltv = loanAmt / (collateral || loanAmt) * 100;
+  let ltvScore = ltv < 60 ? 150 : ltv < 75 ? 120 : ltv < 80 ? 90 : ltv < 90 ? 60 : 30;
+  let empScore = jobYears >= 5 ? 100 : jobYears >= 3 ? 80 : jobYears >= 1 ? 60 : 40;
+  if (getSel('empType') === 'govt') empScore = Math.min(100, empScore + 20);
+  let repayScore = defaults_ === 0 && bounced === 0 ? 150 : defaults_ === 0 ? 100 : defaults_ === 1 ? 60 : 20;
+  if (ccUtil < 30) repayScore = Math.min(150, repayScore + 10);
+
+  let total = Math.round(cibilScore + dscrScore + ltvScore + empScore + repayScore);
+  total = Math.min(900, Math.max(300, total));
+
+  let grade, gradeClass, verdict;
+  if (total >= 850)      { grade = 'A+ — Very Low Risk'; gradeClass = 'grade-A'; verdict = 'Recommended for auto-approval'; }
+  else if (total >= 750) { grade = 'A — Low Risk';       gradeClass = 'grade-A'; verdict = 'Eligible for standard approval'; }
+  else if (total >= 650) { grade = 'B — Moderate Risk';  gradeClass = 'grade-B'; verdict = 'Requires manual review and documentation'; }
+  else if (total >= 550) { grade = 'C — High Risk';      gradeClass = 'grade-C'; verdict = 'Conditional approval with higher rate loading'; }
+  else                   { grade = 'D — Very High Risk';  gradeClass = 'grade-C'; verdict = 'Not recommended for approval'; }
+
+  document.getElementById('resName').textContent    = name;
+  document.getElementById('scoreNum').textContent   = total;
+  document.getElementById('scoreGrade').textContent = grade;
+  document.getElementById('scoreGrade').className   = 'score-grade ' + gradeClass;
+  document.getElementById('scoreVerdict').textContent = verdict;
+
+  drawDial(total);
+
+  const factors = [
+    { name: 'CIBIL Score',       raw: Math.round(cibilScore), max: 300, pct: cibilScore / 300 },
+    { name: 'Debt Service',      raw: Math.round(dscrScore),  max: 200, pct: dscrScore / 200 },
+    { name: 'LTV Ratio',         raw: Math.round(ltvScore),   max: 150, pct: ltvScore / 150 },
+    { name: 'Employment',        raw: Math.round(empScore),   max: 100, pct: empScore / 100 },
+    { name: 'Repayment History', raw: Math.round(repayScore), max: 150, pct: repayScore / 150 },
+  ];
+  const fg = document.getElementById('factorsGrid');
+  fg.innerHTML = '';
+  factors.forEach(f => {
+    const cls = f.pct > 0.7 ? 'f-green' : f.pct > 0.5 ? 'f-amber' : 'f-red';
+    fg.innerHTML += `<div class="factor-card">
+      <div class="factor-header">
+        <span class="factor-name">${f.name}</span>
+        <span class="factor-score" style="color:${f.pct>0.7?'#1a6b3c':f.pct>0.5?'#8a5700':'#8a1a1a'}">${f.raw}/${f.max}</span>
+      </div>
+      <div class="factor-bar"><div class="factor-fill ${cls}" style="width:${Math.round(f.pct*100)}%"></div></div>
+    </div>`;
+  });
+
+  const foir = ((obligations + (loanAmt * 0.085 / 12)) / income * 100).toFixed(1);
+  const rb = document.getElementById('ratioBody');
+  rb.innerHTML = `
+    <tr><td>FOIR (EMI/Income)</td><td>${foir}%</td><td>&lt; 50%</td><td style="color:${foir<50?'#1a6b3c':'#cc0000'}">${foir<50?'✓ Good':'✗ High'}</td></tr>
+    <tr><td>LTV Ratio</td><td>${ltv.toFixed(1)}%</td><td>&lt; 80%</td><td style="color:${ltv<80?'#1a6b3c':'#cc0000'}">${ltv<80?'✓ Good':'✗ High'}</td></tr>
+    <tr><td>DSCR</td><td>${dscr.toFixed(2)}x</td><td>&gt; 1.25x</td><td style="color:${dscr>1.25?'#1a6b3c':'#cc0000'}">${dscr>1.25?'✓ Good':'✗ Low'}</td></tr>
+    <tr><td>Credit Utilisation</td><td>${ccUtil}%</td><td>&lt; 30%</td><td style="color:${ccUtil<30?'#1a6b3c':'#cc0000'}">${ccUtil<30?'✓ Good':'⚠ High'}</td></tr>
+    <tr><td>Estimated CIBIL</td><td>${cibil}</td><td>&gt; 700</td><td style="color:${cibil>700?'#1a6b3c':'#cc0000'}">${cibil>700?'✓ Good':'⚠ Low'}</td></tr>`;
+
+  const recos = [];
+  if (foir > 50)    recos.push('Reduce existing obligations or increase income before applying');
+  if (ltv > 80)     recos.push('Increase down payment to bring LTV below 80%');
+  if (cibil < 700)  recos.push('Improve CIBIL score: clear dues, reduce credit card utilisation');
+  if (ccUtil > 30)  recos.push('Reduce credit card outstanding to below 30% utilisation');
+  if (defaults_ > 0) recos.push('Provide explanation for past defaults; NOC from previous lenders required');
+  if (recos.length === 0) recos.push('Strong profile — proceed with standard documentation', 'Eligible for best rate tier', 'Fast-track processing applicable');
+  document.getElementById('recoList').innerHTML = recos.map(r => `<li>${r}</li>`).join('');
+
+  const alertEl = document.getElementById('riskAlert');
+  if (total < 550)      { alertEl.className='alert alert-danger';  alertEl.style.display='block'; alertEl.textContent='⚠ High default probability. Loan not recommended at current parameters.'; }
+  else if (total < 700) { alertEl.className='alert alert-warning'; alertEl.style.display='block'; alertEl.textContent='⚠ Moderate risk. Consider co-applicant or additional collateral.'; }
+  else                  { alertEl.className='alert alert-success'; alertEl.style.display='block'; alertEl.textContent='✓ Strong credit profile. Eligible for competitive interest rate and swift processing.'; }
+
+  lastAssessedData = {
+    id: 'RA-' + Date.now().toString().slice(-5),
+    borrower: name || 'Unknown',
+    type: document.getElementById('purpose').options[document.getElementById('purpose').selectedIndex].text.split(' ')[0],
+    amount: loanAmt.toLocaleString('en-IN'),
+    outstanding: loanAmt.toLocaleString('en-IN'),
+    rate: '—', dpd: 0, status: 'Active',
+    risk: total >= 850 ? 'A+' : total >= 750 ? 'A' : total >= 650 ? 'B' : total >= 550 ? 'C' : 'D'
+  };
+
+  document.getElementById('resultSection').style.display = 'block';
+  document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function drawDial(score) {
+  const canvas = document.getElementById('dialCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 220, 220);
+  const cx = 110, cy = 110, R = 90;
+  const startAngle = Math.PI * 0.75;
+  const endAngle   = Math.PI * 2.25;
+  const totalArc   = endAngle - startAngle;
+  ctx.beginPath(); ctx.arc(cx,cy,R,startAngle,endAngle);
+  ctx.strokeStyle='#e0ddd5'; ctx.lineWidth=14; ctx.lineCap='round'; ctx.stroke();
+  const pct = (score - 300) / 600;
+  const color = score>=750?'#5de8a0':score>=600?'#f5c842':'#ff7c7c';
+  ctx.beginPath(); ctx.arc(cx,cy,R,startAngle,startAngle+totalArc*pct);
+  ctx.strokeStyle=color; ctx.lineWidth=14; ctx.lineCap='round'; ctx.stroke();
+}
+
+function addToPortfolio() {
+  if (!lastAssessedData) { alert('Please run the Risk Assessment first.'); return; }
+  const existing = JSON.parse(sessionStorage.getItem('assessed_loans') || '[]');
+  const dup = existing.some(e => e.id === lastAssessedData.id);
+  if (!dup) { existing.push(lastAssessedData); sessionStorage.setItem('assessed_loans', JSON.stringify(existing)); }
+  document.getElementById('addPortfolioBtn').disabled = true;
+  document.getElementById('addPortfolioBtn').textContent = '✅ Added';
+  document.getElementById('addPortfolioBtn').style.background = '#d4f7e7';
+  document.getElementById('addedMsg').style.display = 'block';
+}
+
+// Run on page load with default values
+window.addEventListener('DOMContentLoaded', () => { estimateCIBIL(); });
+</script>
+
+<script>
+// ─── AUTH GUARD ────────────────────────────────────────────────────────────
+(function() {
+  const PUBLIC_PAGES = ['signin.html','signup.html'];
+  const currentPage  = location.pathname.split('/').pop() || 'index.html';
+  const isPublic     = PUBLIC_PAGES.some(p => currentPage.includes(p));
+  function getUser() { try { return JSON.parse(sessionStorage.getItem('ls_user')||'null'); } catch { return null; } }
+  if (!isPublic && !getUser()) { sessionStorage.setItem('ls_redirect',location.href); location.href='signin.html'; return; }
+  document.addEventListener('DOMContentLoaded', function() {
+    const user = getUser();
+    const navRight = document.getElementById('navAuthArea');
+    if (!navRight) return;
+    if (user) {
+      const initials = (user.name||user.email||'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+      navRight.innerHTML = `
+        <div style="position:relative;display:inline-block;">
+          <button onclick="toggleProfileMenu()" style="display:flex;align-items:center;gap:10px;background:rgba(201,168,76,0.12);border:1.5px solid rgba(201,168,76,0.4);border-radius:50px;padding:6px 14px 6px 6px;cursor:pointer;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;">
+            <div style="width:34px;height:34px;border-radius:50%;background:#c9a84c;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0a1628;font-size:13px;flex-shrink:0;">${initials}</div>
+            <span>${user.name||user.email.split('@')[0]}</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="rgba(255,255,255,0.6)"><path d="M2 4l4 4 4-4"/></svg>
+          </button>
+          <div id="profileMenu" style="display:none;position:absolute;right:0;top:calc(100% + 8px);background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);min-width:220px;overflow:hidden;z-index:999;border:1px solid #eee;">
+            <div style="padding:16px 18px;border-bottom:1px solid #f0ece3;background:#faf8f4;">
+              <div style="font-weight:700;color:#1a2340;font-size:14px;">${user.name||'User'}</div>
+              <div style="font-size:12px;color:#6b7a99;margin-top:2px;">${user.email||''}</div>
+            </div>
+            <a href="index.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">🏠 Dashboard</a>
+            <a href="portfolio.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">📊 My Portfolio</a>
+            <a href="reports.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">📋 Reports</a>
+            <button onclick="logoutUser()" style="display:flex;align-items:center;gap:10px;padding:12px 18px;width:100%;border:none;background:none;cursor:pointer;color:#cc3333;font-size:14px;font-family:'DM Sans',sans-serif;text-align:left;">🚪 Sign Out</button>
+          </div>
+        </div>`;
+    } else {
+      navRight.innerHTML = `
+        <a href="signin.html" style="color:rgba(255,255,255,0.75);font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:500;">Sign In</a>
+        <a href="signup.html" style="background:#c9a84c;color:#0a1628;font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:600;">Sign Up Free</a>`;
+    }
+  });
+  function toggleProfileMenu() { const m=document.getElementById('profileMenu'); if(m) m.style.display=m.style.display==='none'?'block':'none'; }
+  document.addEventListener('click', function(e) { if(!e.target.closest('#navAuthArea')){const m=document.getElementById('profileMenu');if(m)m.style.display='none';} });
+  function logoutUser() { sessionStorage.removeItem('ls_user'); location.href='signin.html'; }
+  window.toggleProfileMenu=toggleProfileMenu; window.logoutUser=logoutUser;
+})();
+</script>
+</body>
+</html>

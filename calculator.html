@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Loan Calculator — LoanScope</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy: #0a1628; --navy2: #112240; --gold: #c9a84c; --gold-light: #f0d080;
+    --cream: #f8f4ec; --text: #1a2340; --muted: #6b7a99;
+    --white: #ffffff; --border: rgba(201,168,76,0.25); --card-bg: rgba(255,255,255,0.97);
+    --shadow: 0 8px 40px rgba(10,22,40,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); }
+  nav {
+    background: var(--navy); padding: 0 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px; position: sticky; top: 0; z-index: 100;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--gold); letter-spacing: 1px; text-decoration: none; }
+  .logo span { color: var(--white); }
+  nav ul { list-style: none; display: flex; gap: 8px; }
+  nav ul li a { color: rgba(255,255,255,0.75); font-size: 14px; text-decoration: none; padding: 8px 16px; border-radius: 6px; transition: all 0.2s; font-weight: 500; }
+  nav ul li a:hover, nav ul li a.active { color: var(--gold); background: rgba(201,168,76,0.1); }
+  .nav-cta { background: var(--gold); color: var(--navy) !important; font-weight: 600 !important; border-radius: 6px !important; }
+
+  .page-header { background: var(--navy2); padding: 48px; border-bottom: 1px solid var(--border); }
+  .page-header-inner { max-width: 1100px; margin: 0 auto; }
+  .breadcrumb { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
+  .breadcrumb a { color: var(--gold); text-decoration: none; }
+  .page-header h1 { font-family: 'Playfair Display', serif; font-size: 38px; color: var(--white); margin-bottom: 8px; }
+  .page-header p { color: rgba(255,255,255,0.55); font-size: 16px; }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 48px; }
+  .calc-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+
+  /* FORM */
+  .card { background: var(--card-bg); border: 1px solid rgba(201,168,76,0.15); border-radius: 14px; padding: 36px; box-shadow: var(--shadow); }
+  .card h2 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 28px; }
+  .form-group { margin-bottom: 24px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 12px 16px; font-size: 16px; font-family: 'DM Sans', sans-serif;
+    border: 1.5px solid #ddd; border-radius: 8px; background: var(--white);
+    transition: border-color 0.2s; outline: none; color: var(--text);
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--gold); }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--gold); }
+  .slider-val { min-width: 80px; text-align: right; font-weight: 600; font-size: 15px; color: var(--navy); }
+  .btn-calc { width: 100%; padding: 15px; background: var(--gold); color: var(--navy); border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; margin-top: 8px; }
+  .btn-calc:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+  /* RESULTS */
+  .result-card { background: var(--navy); border-radius: 14px; padding: 36px; color: var(--white); }
+  .result-card h2 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--gold); margin-bottom: 28px; }
+  .emi-big { text-align: center; margin-bottom: 32px; padding-bottom: 28px; border-bottom: 1px solid rgba(201,168,76,0.2); }
+  .emi-label { font-size: 13px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .emi-value { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--gold); font-weight: 700; }
+  .emi-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+  .result-row { display: flex; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 15px; }
+  .result-row .rl { color: rgba(255,255,255,0.6); }
+  .result-row .rv { font-weight: 600; }
+  .result-row .rv.interest { color: #ff7c7c; }
+  .result-row .rv.green { color: #5de8a0; }
+
+  /* PIE CHART */
+  .pie-wrap { margin: 28px 0; text-align: center; }
+  canvas { max-width: 220px; }
+  .pie-legend { display: flex; justify-content: center; gap: 24px; margin-top: 12px; font-size: 13px; }
+  .pie-legend span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* AMORTISATION TABLE */
+  .amort-section { margin-top: 32px; }
+  .amort-section h3 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 18px; }
+  .tbl-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(201,168,76,0.15); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--card-bg); }
+  th { background: var(--navy); color: var(--gold); padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; }
+  td { padding: 11px 16px; border-bottom: 1px solid #f0ece3; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #faf7f0; }
+
+  /* LOAN TYPE PILLS */
+  .type-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .pill { padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--border); font-size: 13px; cursor: pointer; transition: all 0.2s; background: var(--white); color: var(--muted); }
+  .pill.active, .pill:hover { background: var(--gold); color: var(--navy); border-color: var(--gold); font-weight: 600; }
+
+  footer { background: var(--navy); border-top: 1px solid var(--border); padding: 40px 48px; margin-top: 60px; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: rgba(255,255,255,0.5); font-size: 13px; text-decoration: none; }
+  .footer-links a:hover { color: var(--gold); }
+  .footer-copy { color: rgba(255,255,255,0.35); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">Loan<span>Scope</span></a>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="calculator.html" class="active">Calculator</a></li>
+    <li><a href="risk.html">Risk Analysis</a></li>
+    <li><a href="portfolio.html">Portfolio</a></li>
+    <li><a href="reports.html">Reports</a></li>
+    <li id="navAuthArea" style="display:flex;align-items:center;gap:8px;"></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="breadcrumb"><a href="index.html">Home</a> › Loan Calculator</div>
+    <h1>EMI & Loan Calculator</h1>
+    <p>Compute monthly instalments, total interest payable, and full amortisation schedule</p>
+  </div>
+</div>
+
+<div class="main">
+  <div style="margin-bottom: 28px;">
+    <div class="type-pills">
+      <span class="pill active" onclick="setLoan(this,8.5,20)">🏠 Home Loan</span>
+      <span class="pill" onclick="setLoan(this,12.5,5)">👤 Personal Loan</span>
+      <span class="pill" onclick="setLoan(this,10.5,7)">🚗 Auto Loan</span>
+      <span class="pill" onclick="setLoan(this,9.5,15)">💼 Business Loan</span>
+      <span class="pill" onclick="setLoan(this,8.75,8)">🎓 Education Loan</span>
+    </div>
+  </div>
+
+  <div class="calc-layout">
+    <!-- FORM -->
+    <div class="card">
+      <h2>Loan Parameters</h2>
+      <div class="form-group">
+        <label>Loan Amount (₹)</label>
+        <input type="number" id="amount" value="2500000" oninput="syncSlider('amount','amtSlider',this.value); calc()"/>
+        <div class="slider-row">
+          <input type="range" id="amtSlider" min="100000" max="50000000" step="50000" value="2500000" oninput="syncInput('amtSlider','amount',this.value); calc()"/>
+          <span class="slider-val" id="amtDisp">₹25L</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Annual Interest Rate (%)</label>
+        <input type="number" id="rate" value="8.5" step="0.1" oninput="syncSlider('rate','rateSlider',this.value); calc()"/>
+        <div class="slider-row">
+          <input type="range" id="rateSlider" min="5" max="24" step="0.1" value="8.5" oninput="syncInput('rateSlider','rate',this.value); calc()"/>
+          <span class="slider-val" id="rateDisp">8.5%</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tenure (Years)</label>
+        <input type="number" id="tenure" value="20" oninput="syncSlider('tenure','tenSlider',this.value); calc()"/>
+        <div class="slider-row">
+          <input type="range" id="tenSlider" min="1" max="30" step="1" value="20" oninput="syncInput('tenSlider','tenure',this.value); calc()"/>
+          <span class="slider-val" id="tenDisp">20 yrs</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Processing Fee (%)</label>
+        <input type="number" id="fee" value="0.5" step="0.1" oninput="calc()"/>
+      </div>
+      <button class="btn-calc" onclick="calc()">Calculate EMI</button>
+      <div style="margin-top:16px; text-align:center;">
+        <a href="risk.html" style="color:var(--gold); font-size:14px; text-decoration:none;">Check your credit eligibility →</a>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="result-card">
+      <h2>Calculation Results</h2>
+      <div class="emi-big">
+        <div class="emi-label">Monthly EMI</div>
+        <div class="emi-value" id="emiOut">₹21,695</div>
+        <div class="emi-sub">for 240 months</div>
+      </div>
+      <div class="result-row"><span class="rl">Principal Amount</span><span class="rv green" id="principal">₹25,00,000</span></div>
+      <div class="result-row"><span class="rl">Total Interest Payable</span><span class="rv interest" id="totalInt">₹27,06,800</span></div>
+      <div class="result-row"><span class="rl">Processing Fee</span><span class="rv" id="procFee">₹12,500</span></div>
+      <div class="result-row"><span class="rl">Total Amount Payable</span><span class="rv" id="totalPay">₹52,19,300</span></div>
+      <div class="result-row"><span class="rl">Effective Interest Cost</span><span class="rv" id="effCost">108.3%</span></div>
+
+      <div class="pie-wrap">
+        <canvas id="pieChart" width="220" height="220"></canvas>
+        <div class="pie-legend">
+          <span><span class="dot" style="background:#c9a84c"></span>Principal</span>
+          <span><span class="dot" style="background:#ff7c7c"></span>Interest</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AMORTISATION TABLE -->
+  <div class="amort-section">
+    <div class="card">
+      <h3>Amortisation Schedule <span style="font-family:'DM Sans';font-size:14px;font-weight:400;color:var(--muted);">(first 24 months shown)</span></h3>
+      <div class="tbl-wrap">
+        <table id="amortTable">
+          <thead><tr><th>#</th><th>EMI (₹)</th><th>Principal (₹)</th><th>Interest (₹)</th><th>Balance (₹)</th></tr></thead>
+          <tbody id="amortBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:20px; display:flex; gap:16px; flex-wrap:wrap;">
+        <a href="risk.html" style="background:var(--gold);color:var(--navy);padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Assess Loan Risk →</a>
+        <a href="portfolio.html" style="border:1.5px solid rgba(201,168,76,0.4);color:var(--gold);padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:500;font-size:14px;">View Portfolio →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <a class="logo" href="index.html" style="font-size:18px;">Loan<span>Scope</span></a>
+    <div class="footer-links">
+      <a href="index.html">Home</a><a href="calculator.html">Calculator</a>
+      <a href="risk.html">Risk</a><a href="portfolio.html">Portfolio</a><a href="reports.html">Reports</a>
+    </div>
+    <div class="footer-copy">© 2026 LoanScope Analytics</div>
+  </div>
+</footer>
+
+<script>
+function fmt(n){ return '₹'+Math.round(n).toLocaleString('en-IN'); }
+function fmtL(n){ if(n>=10000000) return '₹'+(n/10000000).toFixed(2)+'Cr'; if(n>=100000) return '₹'+(n/100000).toFixed(1)+'L'; return '₹'+Math.round(n).toLocaleString('en-IN'); }
+
+function syncSlider(inp,sl,val){ document.getElementById(sl).value=val; updateDisplays(); }
+function syncInput(sl,inp,val){ document.getElementById(inp).value=val; updateDisplays(); }
+function updateDisplays(){
+  let a=+document.getElementById('amount').value;
+  document.getElementById('amtDisp').textContent=fmtL(a);
+  document.getElementById('rateDisp').textContent=(+document.getElementById('rate').value).toFixed(1)+'%';
+  document.getElementById('tenDisp').textContent=document.getElementById('tenure').value+' yrs';
+}
+
+function calc(){
+  updateDisplays();
+  let P=+document.getElementById('amount').value;
+  let rA=+document.getElementById('rate').value;
+  let n=+document.getElementById('tenure').value*12;
+  let fee=+document.getElementById('fee').value/100;
+  let r=rA/12/100;
+  let emi = r===0 ? P/n : P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  let totalPay=emi*n;
+  let totalInt=totalPay-P;
+  let procFee=P*fee;
+
+  document.getElementById('emiOut').textContent=fmt(emi);
+  document.querySelector('.emi-sub').textContent='for '+n+' months';
+  document.getElementById('principal').textContent=fmt(P);
+  document.getElementById('totalInt').textContent=fmt(totalInt);
+  document.getElementById('procFee').textContent=fmt(procFee);
+  document.getElementById('totalPay').textContent=fmt(totalPay+procFee);
+  document.getElementById('effCost').textContent=((totalInt/P)*100).toFixed(1)+'%';
+
+  drawPie(P, totalInt);
+  buildAmort(P, r, emi, n);
+}
+
+function drawPie(principal, interest){
+  let canvas=document.getElementById('pieChart');
+  let ctx=canvas.getContext('2d');
+  let total=principal+interest;
+  let pRatio=principal/total;
+  let iRatio=interest/total;
+  ctx.clearRect(0,0,220,220);
+  let cx=110,cy=110,R=90;
+  // principal
+  ctx.beginPath(); ctx.moveTo(cx,cy);
+  ctx.arc(cx,cy,R, -Math.PI/2, -Math.PI/2+2*Math.PI*pRatio);
+  ctx.closePath(); ctx.fillStyle='#c9a84c'; ctx.fill();
+  // interest
+  ctx.beginPath(); ctx.moveTo(cx,cy);
+  ctx.arc(cx,cy,R, -Math.PI/2+2*Math.PI*pRatio, -Math.PI/2+2*Math.PI);
+  ctx.closePath(); ctx.fillStyle='#ff7c7c'; ctx.fill();
+  // center
+  ctx.beginPath(); ctx.arc(cx,cy,50,0,2*Math.PI);
+  ctx.fillStyle='#0a1628'; ctx.fill();
+  ctx.fillStyle='#c9a84c'; ctx.font='bold 14px DM Sans'; ctx.textAlign='center';
+  ctx.fillText((pRatio*100).toFixed(0)+'%', cx, cy-2);
+  ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='11px DM Sans';
+  ctx.fillText('Principal', cx, cy+14);
+}
+
+function buildAmort(P,r,emi,n){
+  let tbody=document.getElementById('amortBody');
+  tbody.innerHTML='';
+  let bal=P; let months=Math.min(24,n);
+  for(let i=1;i<=months;i++){
+    let intPart=bal*r;
+    let prinPart=emi-intPart;
+    bal=bal-prinPart;
+    let tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i}</td><td>${fmt(emi)}</td><td style="color:#5de8a0">${fmt(prinPart)}</td><td style="color:#ff7c7c">${fmt(intPart)}</td><td>${fmt(Math.max(0,bal))}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function setLoan(el, rate, tenure){
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('rate').value=rate;
+  document.getElementById('rateSlider').value=rate;
+  document.getElementById('tenure').value=tenure;
+  document.getElementById('tenSlider').value=tenure;
+  calc();
+}
+
+calc();
+</script>
+
+<script>
+// ─── AUTH GUARD (shared across all pages) ─────────────────────────────────
+(function() {
+  const PUBLIC_PAGES = ['signin.html', 'signup.html'];
+  const currentPage  = location.pathname.split('/').pop() || 'index.html';
+  const isPublic     = PUBLIC_PAGES.some(p => currentPage.includes(p));
+
+  function getUser() {
+    try { return JSON.parse(sessionStorage.getItem('ls_user') || 'null'); } catch { return null; }
+  }
+
+  // ── Redirect unauthenticated users away from protected pages ──
+  if (!isPublic && !getUser()) {
+    sessionStorage.setItem('ls_redirect', location.href);
+    location.href = 'signin.html';
+    return;
+  }
+
+  // ── After DOM ready: render nav avatar or sign-in buttons ──
+  document.addEventListener('DOMContentLoaded', function() {
+    const user = getUser();
+    const navRight = document.getElementById('navAuthArea');
+    if (!navRight) return;
+
+    if (user) {
+      const initials = (user.name || user.email || 'U')
+        .split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+      navRight.innerHTML = `
+        <div style="position:relative;display:inline-block;">
+          <button onclick="toggleProfileMenu()" style="
+            display:flex;align-items:center;gap:10px;background:rgba(201,168,76,0.12);
+            border:1.5px solid rgba(201,168,76,0.4);border-radius:50px;padding:6px 14px 6px 6px;
+            cursor:pointer;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;">
+            <div style="
+              width:34px;height:34px;border-radius:50%;background:var(--gold,#c9a84c);
+              display:flex;align-items:center;justify-content:center;
+              font-weight:700;color:#0a1628;font-size:13px;flex-shrink:0;">${initials}</div>
+            <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${user.name || user.email.split('@')[0]}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="rgba(255,255,255,0.6)">
+              <path d="M2 4l4 4 4-4"/>
+            </svg>
+          </button>
+          <div id="profileMenu" style="
+            display:none;position:absolute;right:0;top:calc(100% + 8px);
+            background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);
+            min-width:220px;overflow:hidden;z-index:999;border:1px solid #eee;">
+            <div style="padding:16px 18px;border-bottom:1px solid #f0ece3;background:#faf8f4;">
+              <div style="font-weight:700;color:#1a2340;font-size:14px;">${user.name || 'User'}</div>
+              <div style="font-size:12px;color:#6b7a99;margin-top:2px;">${user.email || ''}</div>
+            </div>
+            <a href="index.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              🏠 Dashboard
+            </a>
+            <a href="portfolio.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              📊 My Portfolio
+            </a>
+            <a href="reports.html" style="display:flex;align-items:center;gap:10px;padding:12px 18px;color:#1a2340;text-decoration:none;font-size:14px;border-bottom:1px solid #f5f0e8;">
+              📋 Reports
+            </a>
+            <button onclick="logoutUser()" style="
+              display:flex;align-items:center;gap:10px;padding:12px 18px;width:100%;
+              border:none;background:none;cursor:pointer;color:#cc3333;font-size:14px;
+              font-family:'DM Sans',sans-serif;text-align:left;">
+              🚪 Sign Out
+            </button>
+          </div>
+        </div>`;
+    } else {
+      navRight.innerHTML = `
+        <a href="signin.html" style="color:rgba(255,255,255,0.75);font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:500;">Sign In</a>
+        <a href="signup.html" style="background:var(--gold,#c9a84c);color:#0a1628;font-size:14px;text-decoration:none;padding:8px 16px;border-radius:6px;font-weight:600;">Sign Up Free</a>`;
+    }
+  });
+
+  function toggleProfileMenu() {
+    const m = document.getElementById('profileMenu');
+    if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  }
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#navAuthArea')) {
+      const m = document.getElementById('profileMenu');
+      if (m) m.style.display = 'none';
+    }
+  });
+
+  function logoutUser() {
+    sessionStorage.removeItem('ls_user');
+    location.href = 'signin.html';
+  }
+
+  window.toggleProfileMenu = toggleProfileMenu;
+  window.logoutUser = logoutUser;
+})();
+</script>
+</body>
+</html>
