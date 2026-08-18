@@ -38,6 +38,14 @@ The goal is to make financial and loan-related information easier to explore thr
 | `signin.html` | Sign-in interface |
 | `signup.html` | User registration interface |
 
+## 🎯 Key Objectives
+
+- Analyze loan application and portfolio data
+- Understand borrower profiles and repayment trends
+- Identify potential loan risk indicators
+- Present financial insights through an interactive interface
+- Support better understanding of overall loan performance
+
 ## 🛠️ Technologies Used
 
 - HTML5
